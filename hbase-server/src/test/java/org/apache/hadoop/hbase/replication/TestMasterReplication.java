@@ -71,6 +71,7 @@ import org.apache.hadoop.hbase.tool.LoadIncrementalHFiles;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.HFileTestUtil;
 import org.apache.hadoop.hbase.wal.WALEdit;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.zookeeper.MiniZooKeeperCluster;
 import org.apache.hadoop.hbase.zookeeper.ZKUtil;
 import org.apache.hadoop.hbase.zookeeper.ZKWatcher;
@@ -695,7 +696,7 @@ public class TestMasterReplication {
     // listen for successful log rolls
     final WALActionsListener listener = new WALActionsListener() {
           @Override
-          public void postLogRoll(final Path oldPath, final Path newPath) throws IOException {
+          public void postLogRoll(final WALInfo oldPath, final WALInfo newPath) throws IOException {
             latch.countDown();
           }
         };

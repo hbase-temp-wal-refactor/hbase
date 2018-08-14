@@ -20,12 +20,11 @@ package org.apache.hadoop.hbase.replication.regionserver;
 import java.io.IOException;
 import java.util.concurrent.PriorityBlockingQueue;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.replication.WALEntryFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**
@@ -43,17 +42,17 @@ public class SerialReplicationSourceWALReader extends ReplicationSourceWALReader
 
   private final SerialReplicationChecker checker;
 
-  public SerialReplicationSourceWALReader(FileSystem fs, Configuration conf,
-      PriorityBlockingQueue<Path> logQueue, long startPosition, WALEntryFilter filter,
+  public SerialReplicationSourceWALReader(Configuration conf,
+      PriorityBlockingQueue<WALInfo> logQueue, long startPosition, WALEntryFilter filter,
       ReplicationSource source) {
-    super(fs, conf, logQueue, startPosition, filter, source);
+    super(conf, logQueue, startPosition, filter, source);
     checker = new SerialReplicationChecker(conf, source);
   }
 
   @Override
   protected WALEntryBatch readWALEntries(WALEntryStream entryStream)
       throws IOException, InterruptedException {
-    Path currentPath = entryStream.getCurrentPath();
+    WALInfo currentPath = entryStream.getCurrentPath();
     if (!entryStream.hasNext()) {
       // check whether we have switched a file
       if (currentPath != null && switched(entryStream, currentPath)) {

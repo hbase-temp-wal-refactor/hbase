@@ -57,9 +57,11 @@ import org.apache.hadoop.hbase.replication.regionserver.ReplicationSourceManager
 import org.apache.hadoop.hbase.testclassification.MediumTests;
 import org.apache.hadoop.hbase.testclassification.ReplicationTests;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.wal.FSWalInfo;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALEdit;
 import org.apache.hadoop.hbase.wal.WALFactory;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.wal.WALKeyImpl;
 import org.apache.hadoop.hbase.wal.WALProvider;
 import org.junit.AfterClass;
@@ -174,8 +176,8 @@ public class TestReplicationSource {
     testConf.setInt("replication.source.maxretriesmultiplier", 1);
     ReplicationSourceManager manager = Mockito.mock(ReplicationSourceManager.class);
     Mockito.when(manager.getTotalBufferUsed()).thenReturn(new AtomicLong());
-    source.init(testConf, null, manager, null, mockPeer, null, "testPeer", null,
-      p -> OptionalLong.empty(), null);
+    source.init(testConf, manager, null, mockPeer, null, "testPeer", null,
+      p -> OptionalLong.empty(), null, null);
     ExecutorService executor = Executors.newSingleThreadExecutor();
     Future<?> future = executor.submit(new Runnable() {
 
@@ -301,8 +303,8 @@ public class TestReplicationSource {
     String walGroupId = "fake-wal-group-id";
     ServerName serverName = ServerName.valueOf("www.example.com", 12006, 1524679704418L);
     ServerName deadServer = ServerName.valueOf("www.deadServer.com", 12006, 1524679704419L);
-    PriorityBlockingQueue<Path> queue = new PriorityBlockingQueue<>();
-    queue.put(new Path("/www/html/test"));
+    PriorityBlockingQueue<WALInfo> queue = new PriorityBlockingQueue<>();
+    queue.put(new FSWalInfo(new Path("/www/html/test")));
     RecoveredReplicationSource source = Mockito.mock(RecoveredReplicationSource.class);
     Server server = Mockito.mock(Server.class);
     Mockito.when(server.getServerName()).thenReturn(serverName);

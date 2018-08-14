@@ -42,6 +42,7 @@ import org.apache.hadoop.hbase.regionserver.wal.WALActionsListener;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
 import org.apache.hadoop.hbase.testclassification.ReplicationTests;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.zookeeper.MiniZooKeeperCluster;
 import org.apache.hadoop.hbase.zookeeper.ZKWatcher;
 import org.junit.BeforeClass;
@@ -219,7 +220,7 @@ public class TestMultiSlaveReplication {
     // listen for successful log rolls
     final WALActionsListener listener = new WALActionsListener() {
           @Override
-          public void postLogRoll(final Path oldPath, final Path newPath) throws IOException {
+          public void postLogRoll(final WALInfo oldPath, final WALInfo newPath) throws IOException {
             latch.countDown();
           }
         };

@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.wal.WALEdit;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.wal.WALKey;
 import org.apache.yetus.audience.InterfaceAudience;
 
@@ -38,7 +39,7 @@ public interface WALActionsListener {
    * @param oldPath the path to the old wal
    * @param newPath the path to the new wal
    */
-  default void preLogRoll(Path oldPath, Path newPath) throws IOException {}
+  default void preLogRoll(WALInfo oldPath, WALInfo newPath) throws IOException {}
 
   /**
    * The WAL has been rolled. The oldPath can be null if this is
@@ -46,21 +47,21 @@ public interface WALActionsListener {
    * @param oldPath the path to the old wal
    * @param newPath the path to the new wal
    */
-  default void postLogRoll(Path oldPath, Path newPath) throws IOException {}
+  default void postLogRoll(WALInfo oldPath, WALInfo newPath) throws IOException {}
 
   /**
    * The WAL is going to be archived.
    * @param oldPath the path to the old wal
    * @param newPath the path to the new wal
    */
-  default void preLogArchive(Path oldPath, Path newPath) throws IOException {}
+  default void preLogArchive(WALInfo oldPath, WALInfo newPath) throws IOException {}
 
   /**
    * The WAL has been archived.
    * @param oldPath the path to the old wal
    * @param newPath the path to the new wal
    */
-  default void postLogArchive(Path oldPath, Path newPath) throws IOException {}
+  default void postLogArchive(WALInfo oldPath, WALInfo newPath) throws IOException {}
 
   /**
    * A request was made that the WAL be rolled.

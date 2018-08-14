@@ -18,7 +18,6 @@
  */
 package org.apache.hadoop.hbase.replication.regionserver;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -27,8 +26,6 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.HConstants;
@@ -37,6 +34,7 @@ import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.Threads;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WALEdit;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.wal.WALKey;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
@@ -55,8 +53,7 @@ import org.apache.hadoop.hbase.shaded.protobuf.generated.WALProtos.StoreDescript
 class ReplicationSourceWALReader extends Thread {
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationSourceWALReader.class);
 
-  private final PriorityBlockingQueue<Path> logQueue;
-  private final FileSystem fs;
+  private final PriorityBlockingQueue<WALInfo> logQueue;
   private final Configuration conf;
   private final WALEntryFilter filter;
   private final ReplicationSource source;
@@ -70,7 +67,6 @@ class ReplicationSourceWALReader extends Thread {
   private long currentPosition;
   private final long sleepForRetries;
   private final int maxRetriesMultiplier;
-  private final boolean eofAutoRecovery;
 
   //Indicates whether this particular worker is running
   private boolean isReaderRunning = true;
@@ -88,12 +84,11 @@ class ReplicationSourceWALReader extends Thread {
    * @param filter The filter to use while reading
    * @param source replication source
    */
-  public ReplicationSourceWALReader(FileSystem fs, Configuration conf,
-      PriorityBlockingQueue<Path> logQueue, long startPosition, WALEntryFilter filter,
+  public ReplicationSourceWALReader(Configuration conf,
+      PriorityBlockingQueue<WALInfo> logQueue, long startPosition, WALEntryFilter filter,
       ReplicationSource source) {
     this.logQueue = logQueue;
     this.currentPosition = startPosition;
-    this.fs = fs;
     this.conf = conf;
     this.filter = filter;
     this.source = source;
@@ -110,7 +105,6 @@ class ReplicationSourceWALReader extends Thread {
         this.conf.getLong("replication.source.sleepforretries", 1000);    // 1 second
     this.maxRetriesMultiplier =
         this.conf.getInt("replication.source.maxretriesmultiplier", 300); // 5 minutes @ 1 sec per
-    this.eofAutoRecovery = conf.getBoolean("replication.source.eof.autorecovery", false);
     this.entryBatchQueue = new LinkedBlockingQueue<>(batchCount);
     LOG.info("peerClusterZnode=" + source.getQueueId()
         + ", ReplicationSourceWALReaderThread : " + source.getPeerId()
@@ -123,10 +117,9 @@ class ReplicationSourceWALReader extends Thread {
   public void run() {
     int sleepMultiplier = 1;
     while (isReaderRunning()) { // we only loop back here if something fatal happened to our stream
-      try (WALEntryStream entryStream =
-          new WALEntryStream(logQueue, fs, conf, currentPosition,
-              source.getWALFileLengthProvider(), source.getServerWALsBelongTo(),
-              source.getSourceMetrics())) {
+      try (WALEntryStream entryStream = this.source.getWalProvider().getWalStream(logQueue, conf,
+        currentPosition, source.getWALFileLengthProvider(), source.getServerWALsBelongTo(),
+        source.getSourceMetrics())) {
         while (isReaderRunning()) { // loop here to keep reusing stream while we can
           if (!source.isPeerEnabled()) {
             Threads.sleep(sleepForRetries);
@@ -152,9 +145,6 @@ class ReplicationSourceWALReader extends Thread {
         if (sleepMultiplier < maxRetriesMultiplier) {
           LOG.debug("Failed to read stream of replication entries: " + e);
           sleepMultiplier++;
-        } else {
-          LOG.error("Failed to read stream of replication entries", e);
-          handleEofException(e);
         }
         Threads.sleep(sleepForRetries * sleepMultiplier);
       } catch (InterruptedException e) {
@@ -181,14 +171,14 @@ class ReplicationSourceWALReader extends Thread {
       batch.getNbEntries() >= replicationBatchCountCapacity;
   }
 
-  protected static final boolean switched(WALEntryStream entryStream, Path path) {
-    Path newPath = entryStream.getCurrentPath();
+  protected static final boolean switched(WALEntryStream entryStream, WALInfo path) {
+    WALInfo newPath = entryStream.getCurrentPath();
     return newPath == null || !path.getName().equals(newPath.getName());
   }
 
   protected WALEntryBatch readWALEntries(WALEntryStream entryStream)
       throws IOException, InterruptedException {
-    Path currentPath = entryStream.getCurrentPath();
+    WALInfo currentPath = entryStream.getCurrentPath();
     if (!entryStream.hasNext()) {
       // check whether we have switched a file
       if (currentPath != null && switched(entryStream, currentPath)) {
@@ -241,25 +231,8 @@ class ReplicationSourceWALReader extends Thread {
     }
   }
 
-  // if we get an EOF due to a zero-length log, and there are other logs in queue
-  // (highly likely we've closed the current log), we've hit the max retries, and autorecovery is
-  // enabled, then dump the log
-  private void handleEofException(IOException e) {
-    if ((e instanceof EOFException || e.getCause() instanceof EOFException) &&
-      logQueue.size() > 1 && this.eofAutoRecovery) {
-      try {
-        if (fs.getFileStatus(logQueue.peek()).getLen() == 0) {
-          LOG.warn("Forcing removal of 0 length log in queue: " + logQueue.peek());
-          logQueue.remove();
-          currentPosition = 0;
-        }
-      } catch (IOException ioe) {
-        LOG.warn("Couldn't get file length information about log " + logQueue.peek());
-      }
-    }
-  }
 
-  public Path getCurrentPath() {
+  public WALInfo getCurrentPath() {
     // if we've read some WAL entries, get the Path we read from
     WALEntryBatch batchQueueHead = entryBatchQueue.peek();
     if (batchQueueHead != null) {

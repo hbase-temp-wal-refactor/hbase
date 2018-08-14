@@ -20,21 +20,34 @@ package org.apache.hadoop.hbase.wal;
 
 import static org.apache.hadoop.hbase.wal.AbstractFSWALProvider.META_WAL_PROVIDER_ID;
 import static org.apache.hadoop.hbase.wal.AbstractFSWALProvider.WAL_FILE_NAME_DELIMITER;
+import static org.apache.hadoop.hbase.wal.AbstractFSWALProvider.getWALDirectoryName;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.regionserver.wal.MetricsWAL;
 // imports for classes still in regionserver.wal
 import org.apache.hadoop.hbase.regionserver.wal.WALActionsListener;
+import org.apache.hadoop.hbase.replication.regionserver.FSRecoveredReplicationSource;
+import org.apache.hadoop.hbase.replication.regionserver.FSWALEntryStream;
+import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
+import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
+import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
+import org.apache.hadoop.hbase.replication.regionserver.WALFileLengthProvider;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.CommonFSUtils;
+import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.KeyLocker;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
@@ -88,6 +101,8 @@ public class RegionGroupingProvider implements WALProvider {
     }
   }
 
+  private Path oldLogDir;
+
   /**
    * instantiate a strategy from a config property.
    * requires conf to have already been set (as well as anything the provider might need to read).
@@ -107,6 +122,8 @@ public class RegionGroupingProvider implements WALProvider {
     try {
       final RegionGroupingStrategy result = clazz.getDeclaredConstructor().newInstance();
       result.init(conf, providerId);
+      Path walRootDir = FSUtils.getWALRootDir(conf);
+      this.oldLogDir = new Path(walRootDir, HConstants.HREGION_OLDLOGDIR_NAME);
       return result;
     } catch (Exception e) {
       LOG.error("couldn't set up region grouping strategy, check config key " +
@@ -285,4 +302,38 @@ public class RegionGroupingProvider implements WALProvider {
     // extra code actually works, then we will have other big problems. So leave it as is.
     listeners.add(listener);
   }
+
+  @Override
+  public WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
+      long startPosition, WALFileLengthProvider walFileLengthProvider, ServerName serverName,
+      MetricsSource metrics) throws IOException {
+    return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
+      walFileLengthProvider, serverName, metrics);
+  }
+
+  @Override
+  public WALMetaDataProvider getWalMetaDataTracker() throws IOException {
+    return new FSWALMetaDataProvider(CommonFSUtils.getWALFileSystem(conf));
+  }
+
+  @Override
+  public WALInfo createWalInfo(String wal) {
+    return new FSWalInfo(wal);
+  }
+  
+  @Override
+  public RecoveredReplicationSource getRecoveredReplicationSource() {
+    return new FSRecoveredReplicationSource();
+  }
+
+  @Override
+  public WALInfo getWalFromArchivePath(String wal) {
+    return new FSWalInfo(new Path(oldLogDir, wal));
+  }
+
+  @Override
+  public WALInfo getFullPath(ServerName serverName, String wal) {
+    return new FSWalInfo(new Path(getWALDirectoryName(serverName.toString()), wal));
+  }
+  
 }

@@ -31,6 +31,7 @@ import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.wal.WALEdit;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.wal.WALKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,13 +149,13 @@ public class SampleRegionWALCoprocessor implements WALCoprocessor, RegionCoproce
 
   @Override
   public void preWALRoll(ObserverContext<? extends WALCoprocessorEnvironment> ctx,
-      Path oldPath, Path newPath) throws IOException {
+      WALInfo oldPath, WALInfo newPath) throws IOException {
     preWALRollCalled = true;
   }
 
   @Override
   public void postWALRoll(ObserverContext<? extends WALCoprocessorEnvironment> ctx,
-      Path oldPath, Path newPath) throws IOException {
+      WALInfo oldPath, WALInfo newPath) throws IOException {
     postWALRollCalled = true;
   }
 

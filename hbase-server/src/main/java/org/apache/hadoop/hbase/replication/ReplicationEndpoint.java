@@ -55,7 +55,6 @@ public interface ReplicationEndpoint extends ReplicationPeerConfigListener {
   class Context {
     private final Configuration localConf;
     private final Configuration conf;
-    private final FileSystem fs;
     private final TableDescriptors tableDescriptors;
     private final ReplicationPeer replicationPeer;
     private final String peerId;
@@ -67,7 +66,6 @@ public interface ReplicationEndpoint extends ReplicationPeerConfigListener {
     public Context(
         final Configuration localConf,
         final Configuration conf,
-        final FileSystem fs,
         final String peerId,
         final UUID clusterId,
         final ReplicationPeer replicationPeer,
@@ -76,7 +74,6 @@ public interface ReplicationEndpoint extends ReplicationPeerConfigListener {
         final Abortable abortable) {
       this.localConf = localConf;
       this.conf = conf;
-      this.fs = fs;
       this.clusterId = clusterId;
       this.peerId = peerId;
       this.replicationPeer = replicationPeer;
@@ -89,9 +86,6 @@ public interface ReplicationEndpoint extends ReplicationPeerConfigListener {
     }
     public Configuration getLocalConfiguration() {
       return localConf;
-    }
-    public FileSystem getFilesystem() {
-      return fs;
     }
     public UUID getClusterId() {
       return clusterId;

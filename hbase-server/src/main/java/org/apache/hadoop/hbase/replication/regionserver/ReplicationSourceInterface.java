@@ -23,9 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Server;
 import org.apache.hadoop.hbase.ServerName;
@@ -36,6 +34,8 @@ import org.apache.hadoop.hbase.replication.ReplicationPeer;
 import org.apache.hadoop.hbase.replication.ReplicationQueueStorage;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
+import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALProvider;
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**
@@ -50,17 +50,18 @@ public interface ReplicationSourceInterface {
    * @param fs the file system to use
    * @param manager the manager to use
    * @param server the server for this region server
+   * @param walProvider 
    */
-  void init(Configuration conf, FileSystem fs, ReplicationSourceManager manager,
+  void init(Configuration conf, ReplicationSourceManager manager,
       ReplicationQueueStorage queueStorage, ReplicationPeer replicationPeer, Server server,
       String queueId, UUID clusterId, WALFileLengthProvider walFileLengthProvider,
-      MetricsSource metrics) throws IOException;
+      MetricsSource metrics, WALProvider walProvider) throws IOException;
 
   /**
    * Add a log to the list of logs to replicate
    * @param log path to the log to replicate
    */
-  void enqueueLog(Path log);
+  void enqueueLog(WALInfo log);
 
   /**
    * Add hfile names to the queue to be replicated.
@@ -95,7 +96,7 @@ public interface ReplicationSourceInterface {
    * Get the current log that's replicated
    * @return the current log
    */
-  Path getCurrentPath();
+  WALInfo getCurrentPath();
 
   /**
    * Get the queue id that the source is replicating to

@@ -17,6 +17,8 @@
  */
 package org.apache.hadoop.hbase.wal;
 
+import static org.apache.hadoop.hbase.wal.AbstractFSWALProvider.getWALDirectoryName;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.hadoop.conf.Configuration;
@@ -31,10 +34,18 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.PrivateCellUtil;
+import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.regionserver.MultiVersionConcurrencyControl.WriteEntry;
 import org.apache.hadoop.hbase.regionserver.wal.WALActionsListener;
 import org.apache.hadoop.hbase.regionserver.wal.WALCoprocessorHost;
+import org.apache.hadoop.hbase.replication.regionserver.FSRecoveredReplicationSource;
+import org.apache.hadoop.hbase.replication.regionserver.FSWALEntryStream;
+import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
+import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
+import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
+import org.apache.hadoop.hbase.replication.regionserver.WALFileLengthProvider;
+import org.apache.hadoop.hbase.util.CommonFSUtils;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
@@ -55,6 +66,8 @@ class DisabledWALProvider implements WALProvider {
 
   WAL disabled;
 
+  private Path oldLogDir;
+
   @Override
   public void init(WALFactory factory, Configuration conf, String providerId) throws IOException {
     if (null != disabled) {
@@ -64,6 +77,8 @@ class DisabledWALProvider implements WALProvider {
       providerId = "defaultDisabled";
     }
     disabled = new DisabledWAL(new Path(FSUtils.getWALRootDir(conf), providerId), conf, null);
+    Path walRootDir = FSUtils.getWALRootDir(conf);
+    this.oldLogDir = new Path(walRootDir, HConstants.HREGION_OLDLOGDIR_NAME);
   }
 
   @Override
@@ -123,14 +138,14 @@ class DisabledWALProvider implements WALProvider {
         }
         for (WALActionsListener listener : listeners) {
           try {
-            listener.preLogRoll(path, path);
+            listener.preLogRoll(new FSWalInfo(path), new FSWalInfo(path));
           } catch (IOException exception) {
             LOG.debug("Ignoring exception from listener.", exception);
           }
         }
         for (WALActionsListener listener : listeners) {
           try {
-            listener.postLogRoll(path, path);
+            listener.postLogRoll(new FSWalInfo(path), new FSWalInfo(path));
           } catch (IOException exception) {
             LOG.debug("Ignoring exception from listener.", exception);
           }
@@ -243,7 +258,7 @@ class DisabledWALProvider implements WALProvider {
     }
 
     @Override
-    public OptionalLong getLogFileSizeIfBeingWritten(Path path) {
+    public OptionalLong getLogFileSizeIfBeingWritten(WALInfo path) {
       return OptionalLong.empty();
     }
   }
@@ -261,5 +276,38 @@ class DisabledWALProvider implements WALProvider {
   @Override
   public void addWALActionsListener(WALActionsListener listener) {
     disabled.registerWALActionsListener(listener);
+  }
+
+  @Override
+  public WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
+      long startPosition, WALFileLengthProvider walFileLengthProvider, ServerName serverName,
+      MetricsSource metrics) throws IOException {
+    return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
+      walFileLengthProvider, serverName, metrics);
+  }
+
+  @Override
+  public WALMetaDataProvider getWalMetaDataTracker() throws IOException {
+    return null;
+  }
+
+  @Override
+  public WALInfo createWalInfo(String wal) {
+    return new FSWalInfo(wal);
+  }
+  
+  @Override
+  public RecoveredReplicationSource getRecoveredReplicationSource() {
+    return new FSRecoveredReplicationSource();
+  }
+
+  @Override
+  public WALInfo getWalFromArchivePath(String wal) {
+    return new FSWalInfo(new Path(oldLogDir, wal));
+  }
+
+  @Override
+  public WALInfo getFullPath(ServerName serverName, String wal) {
+    return new FSWalInfo(new Path(getWALDirectoryName(serverName.toString()), wal));
   }
 }

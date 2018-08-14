@@ -52,8 +52,10 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.JVMClusterUtil;
 import org.apache.hadoop.hbase.wal.AbstractFSWALProvider;
+import org.apache.hadoop.hbase.wal.FSWalInfo;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALFactory;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.junit.BeforeClass;
@@ -252,20 +254,20 @@ public class TestLogRolling extends AbstractTestLogRolling {
       server = TEST_UTIL.getRSForFirstRegionInTable(desc.getTableName());
       RegionInfo region = server.getRegions(desc.getTableName()).get(0).getRegionInfo();
       final WAL log = server.getWAL(region);
-      final List<Path> paths = new ArrayList<>(1);
+      final List<WALInfo> paths = new ArrayList<>(1);
       final List<Integer> preLogRolledCalled = new ArrayList<>();
 
-      paths.add(AbstractFSWALProvider.getCurrentFileName(log));
+      paths.add(new FSWalInfo(AbstractFSWALProvider.getCurrentFileName(log)));
       log.registerWALActionsListener(new WALActionsListener() {
 
         @Override
-        public void preLogRoll(Path oldFile, Path newFile) {
+        public void preLogRoll(WALInfo oldFile, WALInfo newFile) {
           LOG.debug("preLogRoll: oldFile=" + oldFile + " newFile=" + newFile);
           preLogRolledCalled.add(new Integer(1));
         }
 
         @Override
-        public void postLogRoll(Path oldFile, Path newFile) {
+        public void postLogRoll(WALInfo oldFile, WALInfo newFile) {
           paths.add(newFile);
         }
       });
@@ -316,15 +318,15 @@ public class TestLogRolling extends AbstractTestLogRolling {
       // read back the data written
       Set<String> loggedRows = new HashSet<>();
       FSUtils fsUtils = FSUtils.getInstance(fs, TEST_UTIL.getConfiguration());
-      for (Path p : paths) {
+      for (WALInfo p : paths) {
         LOG.debug("recovering lease for " + p);
-        fsUtils.recoverFileLease(((HFileSystem) fs).getBackingFs(), p, TEST_UTIL.getConfiguration(),
+        fsUtils.recoverFileLease(((HFileSystem) fs).getBackingFs(), p.getPath(), TEST_UTIL.getConfiguration(),
           null);
 
-        LOG.debug("Reading WAL " + FSUtils.getPath(p));
+        LOG.debug("Reading WAL " + FSUtils.getPath(p.getPath()));
         WAL.Reader reader = null;
         try {
-          reader = WALFactory.createReader(fs, p, TEST_UTIL.getConfiguration());
+          reader = WALFactory.createReader(fs, p.getPath(), TEST_UTIL.getConfiguration());
           WAL.Entry entry;
           while ((entry = reader.next()) != null) {
             LOG.debug("#" + entry.getKey().getSequenceId() + ": " + entry.getEdit().getCells());
@@ -334,7 +336,7 @@ public class TestLogRolling extends AbstractTestLogRolling {
             }
           }
         } catch (EOFException e) {
-          LOG.debug("EOF reading file " + FSUtils.getPath(p));
+          LOG.debug("EOF reading file " + FSUtils.getPath(p.getPath()));
         } finally {
           if (reader != null) reader.close();
         }

@@ -23,9 +23,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.PriorityBlockingQueue;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.regionserver.wal.WALActionsListener;
+import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
+import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
+import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
 import org.apache.hadoop.hbase.replication.regionserver.WALFileLengthProvider;
 import org.apache.yetus.audience.InterfaceAudience;
 
@@ -113,4 +118,54 @@ public interface WALProvider {
     return path -> getWALs().stream().map(w -> w.getLogFileSizeIfBeingWritten(path))
         .filter(o -> o.isPresent()).findAny().orElse(OptionalLong.empty());
   }
+  
+  /**
+   * Streaming implementation to retrieve WAL entries from given set of Wals. This class is given a queue of WAL
+   * @param logQueue Queue of wals
+   * @param conf configuration
+   * @param startPosition start position for the first wal in the queue
+   * @param walFileLengthProvider 
+   * @param serverName name of the server
+   * @param metrics metric source
+   * @return
+   * @throws IOException
+   */
+  WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
+      long startPosition, WALFileLengthProvider walFileLengthProvider, ServerName serverName,
+      MetricsSource metrics) throws IOException;
+
+  /**
+   * MetaData provider for the given WAL implementation 
+   * @return
+   * @throws IOException
+   */
+  WALMetaDataProvider getWalMetaDataTracker() throws IOException;
+
+  /**
+   * Creates WalInfo for Wal path/name
+   * @param wal
+   * @return
+   */
+  WALInfo createWalInfo(String wal);
+
+  /**
+   * Replication source to replicate edits of a dead regionserver
+   * @return
+   */
+  RecoveredReplicationSource getRecoveredReplicationSource();
+
+  /**
+   * Archival path or name for the given wal
+   * @param wal
+   * @return
+   */
+  WALInfo getWalFromArchivePath(String wal);
+
+  /**
+   * Original path or name for the given wal
+   * @param serverName
+   * @param wal
+   * @return
+   */
+  WALInfo getFullPath(ServerName serverName, String wal);
 }

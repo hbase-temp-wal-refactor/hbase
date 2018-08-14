@@ -30,6 +30,7 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.regionserver.HRegionServer;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.wal.WAL;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -130,10 +131,10 @@ public abstract class AbstractTestLogRollPeriod {
 
   private void checkMinLogRolls(final WAL log, final int minRolls)
       throws Exception {
-    final List<Path> paths = new ArrayList<>();
+    final List<WALInfo> paths = new ArrayList<>();
     log.registerWALActionsListener(new WALActionsListener() {
       @Override
-      public void postLogRoll(Path oldFile, Path newFile) {
+      public void postLogRoll(WALInfo oldFile, WALInfo newFile) {
         LOG.debug("postLogRoll: oldFile="+oldFile+" newFile="+newFile);
         paths.add(newFile);
       }

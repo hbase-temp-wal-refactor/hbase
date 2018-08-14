@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Server;
 import org.apache.hadoop.hbase.ServerName;
@@ -33,6 +32,8 @@ import org.apache.hadoop.hbase.replication.regionserver.ReplicationSourceManager
 import org.apache.hadoop.hbase.replication.regionserver.WALFileLengthProvider;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
+import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALProvider;
 
 /**
  * Source that does nothing at all, helpful to test ReplicationSourceManager
@@ -42,15 +43,15 @@ public class ReplicationSourceDummy implements ReplicationSourceInterface {
   private ReplicationSourceManager manager;
   private ReplicationPeer replicationPeer;
   private String peerClusterId;
-  private Path currentPath;
+  private WALInfo currentPath;
   private MetricsSource metrics;
   private WALFileLengthProvider walFileLengthProvider;
   private AtomicBoolean startup = new AtomicBoolean(false);
 
   @Override
-  public void init(Configuration conf, FileSystem fs, ReplicationSourceManager manager,
+  public void init(Configuration conf, ReplicationSourceManager manager,
       ReplicationQueueStorage rq, ReplicationPeer rp, Server server, String peerClusterId,
-      UUID clusterId, WALFileLengthProvider walFileLengthProvider, MetricsSource metrics)
+      UUID clusterId, WALFileLengthProvider walFileLengthProvider, MetricsSource metrics, WALProvider walProvider)
       throws IOException {
     this.manager = manager;
     this.peerClusterId = peerClusterId;
@@ -60,13 +61,13 @@ public class ReplicationSourceDummy implements ReplicationSourceInterface {
   }
 
   @Override
-  public void enqueueLog(Path log) {
+  public void enqueueLog(WALInfo log) {
     this.currentPath = log;
     metrics.incrSizeOfLogQueue();
   }
 
   @Override
-  public Path getCurrentPath() {
+  public WALInfo getCurrentPath() {
     return this.currentPath;
   }
 

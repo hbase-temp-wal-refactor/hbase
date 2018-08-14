@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.function.BiPredicate;
@@ -36,16 +37,27 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.regionserver.wal.DualAsyncFSWAL;
 import org.apache.hadoop.hbase.regionserver.wal.WALActionsListener;
 import org.apache.hadoop.hbase.replication.ReplicationUtils;
 import org.apache.hadoop.hbase.replication.SyncReplicationState;
+import org.apache.hadoop.hbase.replication.regionserver.FSRecoveredReplicationSource;
+import org.apache.hadoop.hbase.replication.regionserver.FSWALEntryStream;
+import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
 import org.apache.hadoop.hbase.replication.regionserver.PeerActionListener;
+import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
 import org.apache.hadoop.hbase.replication.regionserver.SyncReplicationPeerInfoProvider;
+import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
+import org.apache.hadoop.hbase.replication.regionserver.WALFileLengthProvider;
 import org.apache.hadoop.hbase.util.CommonFSUtils;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
+import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.KeyLocker;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.yetus.audience.InterfaceAudience;
@@ -99,6 +111,8 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
 
   private final KeyLocker<String> createLock = new KeyLocker<>();
 
+  private Path oldLogDir;
+
   SyncReplicationWALProvider(WALProvider provider) {
     this.provider = provider;
   }
@@ -115,6 +129,8 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
     provider.init(factory, conf, providerId);
     this.conf = conf;
     this.factory = factory;
+    Path walRootDir = FSUtils.getWALRootDir(conf);
+    this.oldLogDir = new Path(walRootDir, HConstants.HREGION_OLDLOGDIR_NAME);
     Pair<EventLoopGroup, Class<? extends Channel>> eventLoopGroupAndChannelClass =
       NettyAsyncFSWALConfigHelper.getEventLoopConfig(conf);
     eventLoopGroup = eventLoopGroupAndChannelClass.getFirst();
@@ -342,5 +358,38 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
     } else {
       return Optional.empty();
     }
+  }
+
+  @Override
+  public WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
+      long startPosition, WALFileLengthProvider walFileLengthProvider, ServerName serverName,
+      MetricsSource metrics) throws IOException {
+    return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
+      walFileLengthProvider, serverName, metrics);
+  }
+
+  @Override
+  public WALMetaDataProvider getWalMetaDataTracker() throws IOException {
+    return new FSWALMetaDataProvider(CommonFSUtils.getWALFileSystem(conf));
+  }
+
+  @Override
+  public WALInfo createWalInfo(String wal) {
+    return new FSWalInfo(wal);
+  }
+  
+  @Override
+  public RecoveredReplicationSource getRecoveredReplicationSource() {
+    return new FSRecoveredReplicationSource();
+  }
+  
+  @Override
+  public WALInfo getWalFromArchivePath(String wal) {
+    return new FSWalInfo(new Path(oldLogDir, wal));
+  }
+
+  @Override
+  public WALInfo getFullPath(ServerName serverName, String wal) {
+    return new FSWalInfo(new Path(getWALDirectoryName(serverName.toString()), wal));
   }
 }

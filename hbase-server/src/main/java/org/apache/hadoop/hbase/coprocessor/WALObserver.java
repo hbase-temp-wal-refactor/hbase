@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseInterfaceAudience;
 import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.wal.WALEdit;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.wal.WALKey;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
@@ -96,7 +97,7 @@ public interface WALObserver {
    * @param newPath the path of the wal we are going to create
    */
   default void preWALRoll(ObserverContext<? extends WALCoprocessorEnvironment> ctx,
-      Path oldPath, Path newPath) throws IOException {}
+      WALInfo oldPath, WALInfo newPath) throws IOException {}
 
   /**
    * Called after rolling the current WAL
@@ -104,6 +105,6 @@ public interface WALObserver {
    * @param newPath the path of the wal we have created and now is the current
    */
   default void postWALRoll(ObserverContext<? extends WALCoprocessorEnvironment> ctx,
-      Path oldPath, Path newPath) throws IOException {}
+      WALInfo oldPath, WALInfo newPath) throws IOException {}
 }
 
