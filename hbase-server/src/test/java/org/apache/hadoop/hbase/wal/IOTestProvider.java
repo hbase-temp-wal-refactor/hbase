@@ -21,22 +21,32 @@ package org.apache.hadoop.hbase.wal;
 import static org.apache.hadoop.hbase.wal.AbstractFSWALProvider.DEFAULT_PROVIDER_ID;
 import static org.apache.hadoop.hbase.wal.AbstractFSWALProvider.META_WAL_PROVIDER_ID;
 import static org.apache.hadoop.hbase.wal.AbstractFSWALProvider.WAL_FILE_NAME_DELIMITER;
+import static org.apache.hadoop.hbase.wal.AbstractFSWALProvider.getWALDirectoryName;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.PriorityBlockingQueue;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.client.RegionInfo;
 // imports for things that haven't moved from regionserver.wal yet.
 import org.apache.hadoop.hbase.regionserver.wal.FSHLog;
 import org.apache.hadoop.hbase.regionserver.wal.ProtobufLogWriter;
 import org.apache.hadoop.hbase.regionserver.wal.WALActionsListener;
+import org.apache.hadoop.hbase.replication.regionserver.FSRecoveredReplicationSource;
+import org.apache.hadoop.hbase.replication.regionserver.FSWALEntryStream;
+import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
+import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
+import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
+import org.apache.hadoop.hbase.replication.regionserver.WALFileLengthProvider;
 import org.apache.hadoop.hbase.util.CommonFSUtils;
+import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
@@ -89,6 +99,8 @@ public class IOTestProvider implements WALProvider {
   private String providerId;
 
   private List<WALActionsListener> listeners = new ArrayList<>();
+
+  private Path oldLogDir;
   /**
    * @param factory factory that made us, identity used for FS layout. may not be null
    * @param conf may not be null
@@ -103,6 +115,8 @@ public class IOTestProvider implements WALProvider {
     this.factory = factory;
     this.conf = conf;
     this.providerId = providerId != null ? providerId : DEFAULT_PROVIDER_ID;
+    Path walRootDir = FSUtils.getWALRootDir(conf);
+    this.oldLogDir = new Path(walRootDir, HConstants.HREGION_OLDLOGDIR_NAME);
   }
 
   @Override
@@ -284,5 +298,38 @@ public class IOTestProvider implements WALProvider {
   public void addWALActionsListener(WALActionsListener listener) {
     // TODO Implement WALProvider.addWALActionLister
 
+  }
+
+  @Override
+  public WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
+      long startPosition, WALFileLengthProvider walFileLengthProvider, ServerName serverName,
+      MetricsSource metrics) throws IOException {
+    return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
+      walFileLengthProvider, serverName, metrics);
+  }
+
+  @Override
+  public WALMetaDataProvider getWalMetaDataTracker() throws IOException {
+    return new FSWALMetaDataProvider(CommonFSUtils.getWALFileSystem(conf));
+  }
+
+  @Override
+  public WALInfo createWalInfo(String wal) {
+    return new FSWalInfo(new Path(wal));
+  }
+  
+  @Override
+  public RecoveredReplicationSource getRecoveredReplicationSource() {
+    return new FSRecoveredReplicationSource();
+  }
+  
+  @Override
+  public WALInfo getWalFromArchivePath(String wal) {
+    return new FSWalInfo(new Path(oldLogDir, wal));
+  }
+
+  @Override
+  public WALInfo getFullPath(ServerName serverName, String wal) {
+    return new FSWalInfo(new Path(getWALDirectoryName(serverName.toString()), wal));
   }
 }

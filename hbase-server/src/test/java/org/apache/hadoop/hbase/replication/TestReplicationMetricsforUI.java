@@ -28,6 +28,7 @@ import org.apache.hadoop.hbase.replication.regionserver.ReplicationStatus;
 import org.apache.hadoop.hbase.testclassification.MediumTests;
 import org.apache.hadoop.hbase.testclassification.ReplicationTests;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -74,7 +75,7 @@ public class TestReplicationMetricsforUI extends TestReplicationBase {
       }
       rs = utility1.getRSForFirstRegionInTable(tableName);
       metrics = rs.getWalGroupsReplicationStatus();
-      Path lastPath = null;
+      WALInfo lastPath = null;
       for (Map.Entry<String, ReplicationStatus> metric : metrics.entrySet()) {
         lastPath = metric.getValue().getCurrentPath();
         Assert.assertEquals("peerId", PEER_ID2, metric.getValue().getPeerId());

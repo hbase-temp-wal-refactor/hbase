@@ -23,6 +23,7 @@ import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.hbase.replication.ReplicationQueueInfo;
+import org.apache.hadoop.hbase.wal.WALProvider;
 
 /**
  * Constructs a {@link ReplicationSourceInterface}
@@ -32,13 +33,13 @@ public class ReplicationSourceFactory {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationSourceFactory.class);
 
-  static ReplicationSourceInterface create(Configuration conf, String queueId) {
+  static ReplicationSourceInterface create(Configuration conf, String queueId, WALProvider walProvider) {
     ReplicationQueueInfo replicationQueueInfo = new ReplicationQueueInfo(queueId);
     boolean isQueueRecovered = replicationQueueInfo.isQueueRecovered();
     ReplicationSourceInterface src;
     try {
       String defaultReplicationSourceImpl =
-          isQueueRecovered ? RecoveredReplicationSource.class.getCanonicalName()
+          isQueueRecovered ? walProvider.getRecoveredReplicationSource().getClass().getCanonicalName()
               : ReplicationSource.class.getCanonicalName();
       Class<?> c = Class.forName(
         conf.get("replication.replicationsource.implementation", defaultReplicationSourceImpl));
@@ -47,7 +48,7 @@ public class ReplicationSourceFactory {
       LOG.warn("Passed replication source implementation throws errors, "
           + "defaulting to ReplicationSource",
         e);
-      src = isQueueRecovered ? new RecoveredReplicationSource() : new ReplicationSource();
+      src = isQueueRecovered ? walProvider.getRecoveredReplicationSource() : new ReplicationSource();
     }
     return src;
   }

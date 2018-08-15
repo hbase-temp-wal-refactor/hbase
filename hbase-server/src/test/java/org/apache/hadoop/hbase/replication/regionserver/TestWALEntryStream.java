@@ -60,6 +60,7 @@ import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WALEdit;
 import org.apache.hadoop.hbase.wal.WALFactory;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.wal.WALKeyImpl;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.junit.After;
@@ -98,12 +99,14 @@ public class TestWALEntryStream {
   }
 
   private WAL log;
-  PriorityBlockingQueue<Path> walQueue;
+  PriorityBlockingQueue<WALInfo> walQueue;
   private PathWatcher pathWatcher;
 
   @Rule
   public TestName tn = new TestName();
   private final MultiVersionConcurrencyControl mvcc = new MultiVersionConcurrencyControl();
+
+  private WALFactory wals;
 
   @BeforeClass
   public static void setUpBeforeClass() throws Exception {
@@ -124,7 +127,7 @@ public class TestWALEntryStream {
   public void setUp() throws Exception {
     walQueue = new PriorityBlockingQueue<>();
     pathWatcher = new PathWatcher();
-    final WALFactory wals = new WALFactory(CONF, tn.getMethodName());
+    wals = new WALFactory(CONF, tn.getMethodName());
     wals.getWALProvider().addWALActionsListener(pathWatcher);
     log = wals.getWAL(info);
   }
@@ -156,7 +159,7 @@ public class TestWALEntryStream {
           log.rollWriter();
 
           try (WALEntryStream entryStream =
-              new WALEntryStream(walQueue, fs, CONF, 0, log, null, new MetricsSource("1"))) {
+              new FSWALEntryStream(fs, walQueue, CONF, 0, log, null, new MetricsSource("1"))) {
             int i = 0;
             while (entryStream.hasNext()) {
               assertNotNull(entryStream.next());
@@ -183,7 +186,7 @@ public class TestWALEntryStream {
     appendToLogAndSync();
     long oldPos;
     try (WALEntryStream entryStream =
-        new WALEntryStream(walQueue, fs, CONF, 0, log, null, new MetricsSource("1"))) {
+        new FSWALEntryStream(fs, walQueue, CONF, 0, log, null, new MetricsSource("1"))) {
       // There's one edit in the log, read it. Reading past it needs to throw exception
       assertTrue(entryStream.hasNext());
       WAL.Entry entry = entryStream.peek();
@@ -197,7 +200,7 @@ public class TestWALEntryStream {
 
     appendToLogAndSync();
 
-    try (WALEntryStream entryStream = new WALEntryStream(walQueue, fs, CONF, oldPos,
+    try (WALEntryStream entryStream = new FSWALEntryStream(fs, walQueue, CONF, oldPos,
         log, null, new MetricsSource("1"))) {
       // Read the newly added entry, make sure we made progress
       WAL.Entry entry = entryStream.next();
@@ -211,7 +214,7 @@ public class TestWALEntryStream {
     log.rollWriter();
     appendToLogAndSync();
 
-    try (WALEntryStream entryStream = new WALEntryStream(walQueue, fs, CONF, oldPos,
+    try (WALEntryStream entryStream = new FSWALEntryStream(fs, walQueue, CONF, oldPos,
         log, null, new MetricsSource("1"))) {
       WAL.Entry entry = entryStream.next();
       assertNotEquals(oldPos, entryStream.getPosition());
@@ -237,7 +240,7 @@ public class TestWALEntryStream {
     appendToLog("1");
     appendToLog("2");// 2
     try (WALEntryStream entryStream =
-        new WALEntryStream(walQueue, fs, CONF, 0, log, null, new MetricsSource("1"))) {
+        new FSWALEntryStream(fs, walQueue, CONF, 0, log, null, new MetricsSource("1"))) {
       assertEquals("1", getRow(entryStream.next()));
 
       appendToLog("3"); // 3 - comes in after reader opened
@@ -262,7 +265,7 @@ public class TestWALEntryStream {
   public void testNewEntriesWhileStreaming() throws Exception {
     appendToLog("1");
     try (WALEntryStream entryStream =
-        new WALEntryStream(walQueue, fs, CONF, 0, log, null, new MetricsSource("1"))) {
+        new FSWALEntryStream(fs, walQueue, CONF, 0, log, null, new MetricsSource("1"))) {
       entryStream.next(); // we've hit the end of the stream at this point
 
       // some new entries come in while we're streaming
@@ -285,7 +288,7 @@ public class TestWALEntryStream {
     long lastPosition = 0;
     appendToLog("1");
     try (WALEntryStream entryStream =
-        new WALEntryStream(walQueue, fs, CONF, 0, log, null, new MetricsSource("1"))) {
+        new FSWALEntryStream(fs, walQueue, CONF, 0, log, null, new MetricsSource("1"))) {
       entryStream.next(); // we've hit the end of the stream at this point
       appendToLog("2");
       appendToLog("3");
@@ -293,7 +296,7 @@ public class TestWALEntryStream {
     }
     // next stream should picks up where we left off
     try (WALEntryStream entryStream =
-        new WALEntryStream(walQueue, fs, CONF, lastPosition, log, null, new MetricsSource("1"))) {
+        new FSWALEntryStream(fs, walQueue, CONF, lastPosition, log, null, new MetricsSource("1"))) {
       assertEquals("2", getRow(entryStream.next()));
       assertEquals("3", getRow(entryStream.next()));
       assertFalse(entryStream.hasNext()); // done
@@ -310,14 +313,14 @@ public class TestWALEntryStream {
     long lastPosition = 0;
     appendEntriesToLogAndSync(3);
     // read only one element
-    try (WALEntryStream entryStream = new WALEntryStream(walQueue, fs, CONF, lastPosition,
+    try (WALEntryStream entryStream = new FSWALEntryStream(fs, walQueue, CONF, lastPosition,
         log, null, new MetricsSource("1"))) {
       entryStream.next();
       lastPosition = entryStream.getPosition();
     }
     // there should still be two more entries from where we left off
     try (WALEntryStream entryStream =
-        new WALEntryStream(walQueue, fs, CONF, lastPosition, log, null, new MetricsSource("1"))) {
+        new FSWALEntryStream(fs, walQueue, CONF, lastPosition, log, null, new MetricsSource("1"))) {
       assertNotNull(entryStream.next());
       assertNotNull(entryStream.next());
       assertFalse(entryStream.hasNext());
@@ -328,7 +331,7 @@ public class TestWALEntryStream {
   @Test
   public void testEmptyStream() throws Exception {
     try (WALEntryStream entryStream =
-        new WALEntryStream(walQueue, fs, CONF, 0, log, null, new MetricsSource("1"))) {
+        new FSWALEntryStream(fs, walQueue, CONF, 0, log, null, new MetricsSource("1"))) {
       assertFalse(entryStream.hasNext());
     }
   }
@@ -343,6 +346,7 @@ public class TestWALEntryStream {
     when(source.getWALFileLengthProvider()).thenReturn(log);
     when(source.getServer()).thenReturn(mockServer);
     when(source.isRecovered()).thenReturn(recovered);
+    when(source.getWalProvider()).thenReturn(wals.getWALProvider());
     return source;
   }
 
@@ -350,7 +354,7 @@ public class TestWALEntryStream {
     ReplicationSource source = mockReplicationSource(recovered, conf);
     when(source.isPeerEnabled()).thenReturn(true);
     ReplicationSourceWALReader reader =
-      new ReplicationSourceWALReader(fs, conf, walQueue, 0, getDummyFilter(), source);
+      new ReplicationSourceWALReader( conf, walQueue, 0, getDummyFilter(), source);
     reader.start();
     return reader;
   }
@@ -361,7 +365,7 @@ public class TestWALEntryStream {
     // get ending position
     long position;
     try (WALEntryStream entryStream =
-        new WALEntryStream(walQueue, fs, CONF, 0, log, null, new MetricsSource("1"))) {
+        new FSWALEntryStream(fs, walQueue, CONF, 0, log, null, new MetricsSource("1"))) {
       entryStream.next();
       entryStream.next();
       entryStream.next();
@@ -369,7 +373,7 @@ public class TestWALEntryStream {
     }
 
     // start up a reader
-    Path walPath = walQueue.peek();
+    WALInfo walPath = walQueue.peek();
     ReplicationSourceWALReader reader = createReader(false, CONF);
     WALEntryBatch entryBatch = reader.take();
 
@@ -389,7 +393,7 @@ public class TestWALEntryStream {
   @Test
   public void testReplicationSourceWALReaderRecovered() throws Exception {
     appendEntriesToLogAndSync(10);
-    Path walPath = walQueue.peek();
+    WALInfo walPath = walQueue.peek();
     log.rollWriter();
     appendEntriesToLogAndSync(5);
     log.shutdown();
@@ -422,14 +426,14 @@ public class TestWALEntryStream {
   @Test
   public void testReplicationSourceWALReaderWrongPosition() throws Exception {
     appendEntriesToLogAndSync(1);
-    Path walPath = walQueue.peek();
+    WALInfo walPath = walQueue.peek();
     log.rollWriter();
     appendEntriesToLogAndSync(20);
     TEST_UTIL.waitFor(5000, new ExplainingPredicate<Exception>() {
 
       @Override
       public boolean evaluate() throws Exception {
-        return fs.getFileStatus(walPath).getLen() > 0;
+        return fs.getFileStatus(walPath.getPath()).getLen() > 0;
       }
 
       @Override
@@ -438,7 +442,7 @@ public class TestWALEntryStream {
       }
 
     });
-    long walLength = fs.getFileStatus(walPath).getLen();
+    long walLength = fs.getFileStatus(walPath.getPath()).getLen();
 
     ReplicationSourceWALReader reader = createReader(false, CONF);
 
@@ -449,7 +453,7 @@ public class TestWALEntryStream {
     assertEquals(1, entryBatch.getNbEntries());
     assertTrue(entryBatch.isEndOfFile());
 
-    Path walPath2 = walQueue.peek();
+    WALInfo walPath2 = walQueue.peek();
     entryBatch = reader.take();
     assertEquals(walPath2, entryBatch.getLastWalPath());
     assertEquals(20, entryBatch.getNbEntries());
@@ -462,7 +466,7 @@ public class TestWALEntryStream {
     assertEquals(0, entryBatch.getNbEntries());
     assertTrue(entryBatch.isEndOfFile());
 
-    Path walPath3 = walQueue.peek();
+    WALInfo walPath3 = walQueue.peek();
     entryBatch = reader.take();
     assertEquals(walPath3, entryBatch.getLastWalPath());
     assertEquals(10, entryBatch.getNbEntries());
@@ -476,7 +480,7 @@ public class TestWALEntryStream {
     // get ending position
     long position;
     try (WALEntryStream entryStream =
-      new WALEntryStream(walQueue, fs, CONF, 0, log, null, new MetricsSource("1"))) {
+      new FSWALEntryStream(fs, walQueue, CONF, 0, log, null, new MetricsSource("1"))) {
       entryStream.next();
       entryStream.next();
       entryStream.next();
@@ -484,7 +488,7 @@ public class TestWALEntryStream {
     }
 
     // start up a reader
-    Path walPath = walQueue.peek();
+    WALInfo walPath = walQueue.peek();
     ReplicationSource source = mockReplicationSource(false, CONF);
     AtomicInteger invokeCount = new AtomicInteger(0);
     AtomicBoolean enabled = new AtomicBoolean(false);
@@ -494,7 +498,7 @@ public class TestWALEntryStream {
     });
 
     ReplicationSourceWALReader reader =
-      new ReplicationSourceWALReader(fs, CONF, walQueue, 0, getDummyFilter(), source);
+      new ReplicationSourceWALReader(CONF, walQueue, 0, getDummyFilter(), source);
     reader.start();
     Future<WALEntryBatch> future = ForkJoinPool.commonPool().submit(() -> {
       return reader.take();
@@ -577,10 +581,10 @@ public class TestWALEntryStream {
 
   class PathWatcher implements WALActionsListener {
 
-    Path currentPath;
+    WALInfo currentPath;
 
     @Override
-    public void preLogRoll(Path oldPath, Path newPath) throws IOException {
+    public void preLogRoll(WALInfo oldPath, WALInfo newPath) throws IOException {
       walQueue.add(newPath);
       currentPath = newPath;
     }
@@ -592,7 +596,7 @@ public class TestWALEntryStream {
     appendToLog("2");
     long size = log.getLogFileSizeIfBeingWritten(walQueue.peek()).getAsLong();
     AtomicLong fileLength = new AtomicLong(size - 1);
-    try (WALEntryStream entryStream = new WALEntryStream(walQueue, fs, CONF, 0,
+    try (WALEntryStream entryStream = new FSWALEntryStream(fs, walQueue, CONF, 0,
         p -> OptionalLong.of(fileLength.get()), null, new MetricsSource("1"))) {
       assertTrue(entryStream.hasNext());
       assertNotNull(entryStream.next());

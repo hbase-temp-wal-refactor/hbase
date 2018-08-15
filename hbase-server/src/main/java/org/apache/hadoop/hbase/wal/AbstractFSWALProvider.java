@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,7 +41,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.hbase.regionserver.wal.AbstractFSWAL;
 import org.apache.hadoop.hbase.regionserver.wal.WALActionsListener;
+import org.apache.hadoop.hbase.replication.regionserver.FSRecoveredReplicationSource;
+import org.apache.hadoop.hbase.replication.regionserver.FSWALEntryStream;
+import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
+import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
+import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
+import org.apache.hadoop.hbase.replication.regionserver.WALFileLengthProvider;
 import org.apache.hadoop.hbase.util.CancelableProgressable;
+import org.apache.hadoop.hbase.util.CommonFSUtils;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.LeaseNotRecoveredException;
 import org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting;
@@ -59,6 +67,9 @@ import org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesti
 @InterfaceStability.Evolving
 public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implements WALProvider {
 
+  // Path to the wals directories
+  // Path to the wal archive
+  private Path oldLogDir;
   private static final Logger LOG = LoggerFactory.getLogger(AbstractFSWALProvider.class);
 
   /** Separate old log into different dir by regionserver name **/
@@ -104,6 +115,8 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
     this.factory = factory;
     this.conf = conf;
     this.providerId = providerId;
+    Path walRootDir = FSUtils.getWALRootDir(conf);
+    this.oldLogDir = new Path(walRootDir, HConstants.HREGION_OLDLOGDIR_NAME);
     // get log prefix
     StringBuilder sb = new StringBuilder().append(factory.factoryId);
     if (providerId != null) {
@@ -540,4 +553,38 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
   public static long getWALStartTimeFromWALName(String name) {
     return Long.parseLong(getWALNameGroupFromWALName(name, 2));
   }
+  
+  @Override
+  public WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
+      long startPosition, WALFileLengthProvider walFileLengthProvider, ServerName serverName,
+      MetricsSource metrics) throws IOException {
+    return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
+        walFileLengthProvider, serverName, metrics);
+  }
+  
+  @Override
+  public WALMetaDataProvider getWalMetaDataTracker() throws IOException {
+    return new FSWALMetaDataProvider(CommonFSUtils.getWALFileSystem(conf));
+  }
+  
+  @Override
+  public WALInfo createWalInfo(String wal) {
+    return new FSWalInfo(wal);
+  }
+  
+  @Override
+  public RecoveredReplicationSource getRecoveredReplicationSource() {
+    return new FSRecoveredReplicationSource();
+  }
+  
+  @Override
+  public WALInfo getWalFromArchivePath(String wal) {
+    return new FSWalInfo(new Path(oldLogDir, wal));
+  }
+
+  @Override
+  public WALInfo getFullPath(ServerName serverName, String wal) {
+    return new FSWalInfo(new Path(getWALDirectoryName(serverName.toString()), wal));
+  }
+  
 }

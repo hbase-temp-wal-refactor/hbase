@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
@@ -32,6 +31,7 @@ import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.Threads;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WALEdit;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,14 +56,14 @@ public class ReplicationSourceShipper extends Thread {
 
   private final Configuration conf;
   protected final String walGroupId;
-  protected final PriorityBlockingQueue<Path> queue;
+  protected final PriorityBlockingQueue<WALInfo> queue;
   private final ReplicationSource source;
 
   // Last position in the log that we sent to ZooKeeper
   // It will be accessed by the stats thread so make it volatile
   private volatile long currentPosition = -1;
   // Path of the current log
-  private Path currentPath;
+  private WALInfo currentPath;
   // Current state of the worker thread
   private volatile WorkerState state;
   protected ReplicationSourceWALReader entryReader;
@@ -76,7 +76,7 @@ public class ReplicationSourceShipper extends Thread {
   private final int getEntriesTimeout;
 
   public ReplicationSourceShipper(Configuration conf, String walGroupId,
-      PriorityBlockingQueue<Path> queue, ReplicationSource source) {
+      PriorityBlockingQueue<WALInfo> queue, ReplicationSource source) {
     this.conf = conf;
     this.walGroupId = walGroupId;
     this.queue = queue;
@@ -293,7 +293,7 @@ public class ReplicationSourceShipper extends Thread {
       name + ".replicationSource.shipper" + walGroupId + "," + source.getQueueId(), handler);
   }
 
-  Path getCurrentPath() {
+  WALInfo getCurrentPath() {
     return entryReader.getCurrentPath();
   }
 

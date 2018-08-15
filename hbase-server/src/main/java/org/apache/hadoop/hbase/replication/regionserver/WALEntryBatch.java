@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**
@@ -36,7 +36,7 @@ class WALEntryBatch {
 
   private List<Entry> walEntries;
   // last WAL that was read
-  private Path lastWalPath;
+  private WALInfo lastWalPath;
   // position in WAL of last entry in this batch
   private long lastWalPosition = 0;
   // number of distinct row keys in this batch
@@ -53,13 +53,13 @@ class WALEntryBatch {
   /**
    * @param lastWalPath Path of the WAL the last entry in this batch was read from
    */
-  WALEntryBatch(int maxNbEntries, Path lastWalPath) {
+  WALEntryBatch(int maxNbEntries, WALInfo lastWalPath) {
     this.walEntries = new ArrayList<>(maxNbEntries);
     this.lastWalPath = lastWalPath;
   }
 
 
-  static WALEntryBatch endOfFile(Path lastWalPath) {
+  static WALEntryBatch endOfFile(WALInfo lastWalPath) {
     WALEntryBatch batch = new WALEntryBatch(0, lastWalPath);
     batch.setLastWalPosition(-1L);
     batch.setEndOfFile(true);
@@ -80,7 +80,7 @@ class WALEntryBatch {
   /**
    * @return the path of the last WAL that was read.
    */
-  public Path getLastWalPath() {
+  public WALInfo getLastWalPath() {
     return lastWalPath;
   }
 

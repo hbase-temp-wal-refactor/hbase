@@ -68,9 +68,11 @@ import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.wal.AbstractFSWALProvider;
+import org.apache.hadoop.hbase.wal.FSWalInfo;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALEdit;
 import org.apache.hadoop.hbase.wal.WALFactory;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.wal.WALKeyImpl;
 import org.apache.hadoop.hbase.wal.WALPrettyPrinter;
 import org.apache.hadoop.hbase.wal.WALProvider.WriterBase;
@@ -550,7 +552,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> implements WAL {
   /**
    * Tell listeners about pre log roll.
    */
-  private void tellListenersAboutPreLogRoll(final Path oldPath, final Path newPath)
+  private void tellListenersAboutPreLogRoll(final WALInfo oldPath, final WALInfo newPath)
       throws IOException {
     coprocessorHost.preWALRoll(oldPath, newPath);
 
@@ -564,7 +566,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> implements WAL {
   /**
    * Tell listeners about post log roll.
    */
-  private void tellListenersAboutPostLogRoll(final Path oldPath, final Path newPath)
+  private void tellListenersAboutPostLogRoll(final WALInfo oldPath, final WALInfo newPath)
       throws IOException {
     if (!this.listeners.isEmpty()) {
       for (WALActionsListener i : this.listeners) {
@@ -658,7 +660,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> implements WAL {
     // Tell our listeners that a log is going to be archived.
     if (!this.listeners.isEmpty()) {
       for (WALActionsListener i : this.listeners) {
-        i.preLogArchive(p, newPath);
+        i.preLogArchive(new FSWalInfo(p), new FSWalInfo(newPath));
       }
     }
     LOG.info("Archiving " + p + " to " + newPath);
@@ -668,7 +670,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> implements WAL {
     // Tell our listeners that a log has been archived.
     if (!this.listeners.isEmpty()) {
       for (WALActionsListener i : this.listeners) {
-        i.postLogArchive(p, newPath);
+        i.postLogArchive(new FSWalInfo(p), new FSWalInfo(newPath));
       }
     }
   }
@@ -768,10 +770,10 @@ public abstract class AbstractFSWAL<W extends WriterBase> implements WAL {
         Path newPath = getNewPath();
         // Any exception from here on is catastrophic, non-recoverable so we currently abort.
         W nextWriter = this.createWriterInstance(newPath);
-        tellListenersAboutPreLogRoll(oldPath, newPath);
+        tellListenersAboutPreLogRoll(new FSWalInfo(oldPath), new FSWalInfo(newPath));
         // NewPath could be equal to oldPath if replaceWriter fails.
         newPath = replaceWriter(oldPath, newPath, nextWriter);
-        tellListenersAboutPostLogRoll(oldPath, newPath);
+        tellListenersAboutPostLogRoll(new FSWalInfo(oldPath), new FSWalInfo(newPath));
         if (LOG.isDebugEnabled()) {
           LOG.debug("Create new " + implClassName + " writer with pipeline: " +
             Arrays.toString(getPipeline()));
@@ -844,7 +846,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> implements WAL {
         // Tell our listeners that a log is going to be archived.
         if (!this.listeners.isEmpty()) {
           for (WALActionsListener i : this.listeners) {
-            i.preLogArchive(file.getPath(), p);
+            i.preLogArchive(new FSWalInfo(file.getPath()), new FSWalInfo(p));
           }
         }
 
@@ -854,7 +856,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> implements WAL {
         // Tell our listeners that a log was archived.
         if (!this.listeners.isEmpty()) {
           for (WALActionsListener i : this.listeners) {
-            i.postLogArchive(file.getPath(), p);
+            i.postLogArchive(new FSWalInfo(file.getPath()), new FSWalInfo(p));
           }
         }
       }
@@ -1004,11 +1006,11 @@ public abstract class AbstractFSWAL<W extends WriterBase> implements WAL {
    * https://issues.apache.org/jira/browse/HBASE-14004 for more details.
    */
   @Override
-  public OptionalLong getLogFileSizeIfBeingWritten(Path path) {
+  public OptionalLong getLogFileSizeIfBeingWritten(WALInfo path) {
     rollWriterLock.lock();
     try {
       Path currentPath = getOldPath();
-      if (path.equals(currentPath)) {
+      if (path.getPath().equals(currentPath)) {
         W writer = this.writer;
         return writer != null ? OptionalLong.of(writer.getLength()) : OptionalLong.empty();
       } else {

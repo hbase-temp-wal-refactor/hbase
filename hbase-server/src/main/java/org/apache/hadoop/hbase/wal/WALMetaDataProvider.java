@@ -15,15 +15,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hadoop.hbase.replication.regionserver;
+package org.apache.hadoop.hbase.wal;
 
-import java.util.OptionalLong;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import java.io.IOException;
 import org.apache.yetus.audience.InterfaceAudience;
+import org.apache.yetus.audience.InterfaceStability;
 
+/**
+ * MetaData provider for the given WAL implementation
+ */
 @InterfaceAudience.Private
-@FunctionalInterface
-public interface WALFileLengthProvider {
+@InterfaceStability.Evolving
+public interface WALMetaDataProvider {
 
-  OptionalLong getLogFileSizeIfBeingWritten(WALInfo path);
+  /**
+   * @param log complete name of the log to check if it exists or not
+   * @return
+   * @throws IOException
+   */
+  boolean exists(String log) throws IOException;
+
+  /**
+   * @param walInfo it could be a namespace for a Stream or directory/path for a FS based storage
+   * @return
+   * @throws IOException
+   */
+  WALInfo[] list(WALInfo walInfo) throws IOException;
+
 }
