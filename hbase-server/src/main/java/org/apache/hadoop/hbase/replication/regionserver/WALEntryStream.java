@@ -45,7 +45,7 @@ public interface WALEntryStream extends Closeable {
   /**
    * @return the {@link WALInfo} of the current WAL
    */
-  public WALInfo getCurrentPath();
+  public WALInfo getCurrentWalInfo();
 
   /**
    * Should be called if the stream is to be reused (i.e. used again after hasNext() has returned

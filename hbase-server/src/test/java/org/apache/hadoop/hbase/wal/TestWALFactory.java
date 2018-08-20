@@ -679,6 +679,7 @@ public class TestWALFactory {
   @Test
   public void testWALProviders() throws IOException {
     Configuration conf = new Configuration();
+    conf.set(HConstants.HBASE_DIR, TestWALFactory.conf.get(HConstants.HBASE_DIR));
     // if providers are not set but enable SyncReplicationWALProvider by default for master node
     // with not only system tables
     WALFactory walFactory = new WALFactory(conf, this.currentServername.toString());
@@ -696,6 +697,7 @@ public class TestWALFactory {
   public void testOnlySetWALProvider() throws IOException {
     Configuration conf = new Configuration();
     conf.set(WAL_PROVIDER, WALFactory.Providers.multiwal.name());
+    conf.set(HConstants.HBASE_DIR, TestWALFactory.conf.get(HConstants.HBASE_DIR));
     WALFactory walFactory = new WALFactory(conf, this.currentServername.toString());
     WALProvider wrappedWALProvider = ((SyncReplicationWALProvider) walFactory.getWALProvider())
         .getWrappedProvider();
@@ -710,6 +712,7 @@ public class TestWALFactory {
   public void testOnlySetMetaWALProvider() throws IOException {
     Configuration conf = new Configuration();
     conf.set(META_WAL_PROVIDER, WALFactory.Providers.asyncfs.name());
+    conf.set(HConstants.HBASE_DIR, TestWALFactory.conf.get(HConstants.HBASE_DIR));
     WALFactory walFactory = new WALFactory(conf, this.currentServername.toString());
     WALProvider wrappedWALProvider = ((SyncReplicationWALProvider) walFactory.getWALProvider())
         .getWrappedProvider();

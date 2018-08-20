@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Streaming access to WAL entries. This class is given a queue of WAL {@link Path}, and continually
+ * Streaming access to WAL entries. This class is given a queue of WAL {@link WALInfo}, and continually
  * iterates through all the WAL {@link Entry} in the queue. When it's done reading from a Path, it
  * dequeues it and starts reading from the next.
  */
@@ -123,7 +123,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
   }
 
   @Override
-  public WALInfo getCurrentPath() {
+  public WALInfo getCurrentWalInfo() {
     return currentPath;
   }
 
@@ -242,7 +242,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
     try {
       // Detect if this is a new file, if so get a new reader else
       // reset the current reader so that we see the new data
-      if (reader == null || !getCurrentPath().equals(path)) {
+      if (reader == null || !getCurrentWalInfo().equals(path)) {
         closeReader();
         reader = createReader(path, conf);
         seek();

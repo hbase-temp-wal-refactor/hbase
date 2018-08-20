@@ -172,13 +172,13 @@ class ReplicationSourceWALReader extends Thread {
   }
 
   protected static final boolean switched(WALEntryStream entryStream, WALInfo path) {
-    WALInfo newPath = entryStream.getCurrentPath();
+    WALInfo newPath = entryStream.getCurrentWalInfo();
     return newPath == null || !path.getName().equals(newPath.getName());
   }
 
   protected WALEntryBatch readWALEntries(WALEntryStream entryStream)
       throws IOException, InterruptedException {
-    WALInfo currentPath = entryStream.getCurrentPath();
+    WALInfo currentPath = entryStream.getCurrentWalInfo();
     if (!entryStream.hasNext()) {
       // check whether we have switched a file
       if (currentPath != null && switched(entryStream, currentPath)) {
@@ -193,7 +193,7 @@ class ReplicationSourceWALReader extends Thread {
       }
     } else {
       // when reading from the entry stream first time we will enter here
-      currentPath = entryStream.getCurrentPath();
+      currentPath = entryStream.getCurrentWalInfo();
     }
     WALEntryBatch batch = createBatch(entryStream);
     for (;;) {
@@ -253,7 +253,7 @@ class ReplicationSourceWALReader extends Thread {
   }
 
   protected final WALEntryBatch createBatch(WALEntryStream entryStream) {
-    return new WALEntryBatch(replicationBatchCountCapacity, entryStream.getCurrentPath());
+    return new WALEntryBatch(replicationBatchCountCapacity, entryStream.getCurrentWalInfo());
   }
 
   protected final Entry filterEntry(Entry entry) {
