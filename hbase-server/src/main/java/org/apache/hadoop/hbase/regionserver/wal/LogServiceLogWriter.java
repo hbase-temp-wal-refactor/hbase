@@ -19,13 +19,14 @@ package org.apache.hadoop.hbase.regionserver.wal;
 
 import java.io.IOException;
 import java.io.OutputStream;
+
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.util.CommonFSUtils;
 import org.apache.hadoop.hbase.util.CommonFSUtils.StreamLacksCapabilityException;
-import org.apache.hadoop.hbase.wal.FSHLogProvider;
+import org.apache.hadoop.hbase.wal.LogServiceProvider;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
@@ -38,13 +39,17 @@ import org.apache.hadoop.hbase.shaded.protobuf.generated.WALProtos.WALTrailer;
  * Writer for protobuf-based WAL.
  */
 @InterfaceAudience.Private
-public class ProtobufLogWriter extends AbstractFSProtobufLogWriter
-    implements FSHLogProvider.Writer {
+public class LogServiceLogWriter extends AbstractProtobufLogWriter
+    implements LogServiceProvider.Writer {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ProtobufLogWriter.class);
+  private static final Logger LOG = LoggerFactory.getLogger(LogServiceLogWriter.class);
 
   protected FSDataOutputStream output;
 
+  // for LogServiceProvider.Writer
+  public void init(Path path, Configuration conf, boolean overwritable,
+      long blocksize) throws IOException, StreamLacksCapabilityException {
+  }
   @Override
   public void append(Entry entry) throws IOException {
     entry.getKey().getBuilder(compressor).
@@ -60,9 +65,7 @@ public class ProtobufLogWriter extends AbstractFSProtobufLogWriter
   public void close() throws IOException {
     if (this.output != null) {
       try {
-        if (!trailerWritten) {
-          writeWALTrailer();
-        }
+        if (!trailerWritten) writeWALTrailer();
         this.output.close();
       } catch (NullPointerException npe) {
         // Can get a NPE coming up from down in DFSClient$DFSOutputStream#close
@@ -75,9 +78,7 @@ public class ProtobufLogWriter extends AbstractFSProtobufLogWriter
   @Override
   public void sync(boolean forceSync) throws IOException {
     FSDataOutputStream fsdos = this.output;
-    if (fsdos == null) {
-      return; // Presume closed
-    }
+    if (fsdos == null) return; // Presume closed
     fsdos.flush();
     if (forceSync) {
       fsdos.hsync();
@@ -91,19 +92,9 @@ public class ProtobufLogWriter extends AbstractFSProtobufLogWriter
   }
 
   @SuppressWarnings("deprecation")
-  @Override
-  protected void initOutput(FileSystem fs, Path path, boolean overwritable, int bufferSize,
+  protected void initOutput(Path path, boolean overwritable, int bufferSize,
       short replication, long blockSize) throws IOException, StreamLacksCapabilityException {
-    this.output = CommonFSUtils.createForWal(fs, path, overwritable, bufferSize, replication,
-        blockSize, false);
-    if (fs.getConf().getBoolean(CommonFSUtils.UNSAFE_STREAM_CAPABILITY_ENFORCE, true)) {
-      if (!CommonFSUtils.hasCapability(output, "hflush")) {
-        throw new StreamLacksCapabilityException("hflush");
-      }
-      if (!CommonFSUtils.hasCapability(output, "hsync")) {
-        throw new StreamLacksCapabilityException("hsync");
-      }
-    }
+    this.output = null;
   }
 
   @Override

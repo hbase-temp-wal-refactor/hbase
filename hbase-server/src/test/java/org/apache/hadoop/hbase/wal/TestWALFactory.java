@@ -696,7 +696,7 @@ public class TestWALFactory {
   @Test
   public void testOnlySetWALProvider() throws IOException {
     Configuration conf = new Configuration();
-    conf.set(WAL_PROVIDER, WALFactory.Providers.multiwal.name());
+    conf.set(WAL_PROVIDER, RegionGroupingProvider.class.getName());
     conf.set(HConstants.HBASE_DIR, TestWALFactory.conf.get(HConstants.HBASE_DIR));
     WALFactory walFactory = new WALFactory(conf, this.currentServername.toString());
     WALProvider wrappedWALProvider = ((SyncReplicationWALProvider) walFactory.getWALProvider())
@@ -704,22 +704,22 @@ public class TestWALFactory {
 
     assertEquals(SyncReplicationWALProvider.class, walFactory.getWALProvider().getClass());
     // class of WALProvider and metaWALProvider are the same when metaWALProvider is not set
-    assertEquals(WALFactory.Providers.multiwal.clazz, wrappedWALProvider.getClass());
-    assertEquals(WALFactory.Providers.multiwal.clazz, walFactory.getMetaProvider().getClass());
+    assertEquals(RegionGroupingProvider.class, wrappedWALProvider.getClass());
+    assertEquals(RegionGroupingProvider.class, walFactory.getMetaProvider().getClass());
   }
 
   @Test
   public void testOnlySetMetaWALProvider() throws IOException {
     Configuration conf = new Configuration();
-    conf.set(META_WAL_PROVIDER, WALFactory.Providers.asyncfs.name());
+    conf.set(META_WAL_PROVIDER, AsyncFSWALProvider.class.getName());
     conf.set(HConstants.HBASE_DIR, TestWALFactory.conf.get(HConstants.HBASE_DIR));
     WALFactory walFactory = new WALFactory(conf, this.currentServername.toString());
     WALProvider wrappedWALProvider = ((SyncReplicationWALProvider) walFactory.getWALProvider())
         .getWrappedProvider();
 
     assertEquals(SyncReplicationWALProvider.class, walFactory.getWALProvider().getClass());
-    assertEquals(WALFactory.Providers.defaultProvider.clazz, wrappedWALProvider.getClass());
-    assertEquals(WALFactory.Providers.asyncfs.clazz, walFactory.getMetaProvider().getClass());
+    assertEquals(AsyncFSWALProvider.class, wrappedWALProvider.getClass());
+    assertEquals(AsyncFSWALProvider.class, walFactory.getMetaProvider().getClass());
   }
 
 }
