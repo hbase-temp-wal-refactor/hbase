@@ -68,6 +68,8 @@ class DisabledWALProvider implements WALProvider {
 
   private Path oldLogDir;
 
+  private Path walRootDir;
+
   @Override
   public void init(WALFactory factory, Configuration conf, String providerId) throws IOException {
     if (null != disabled) {
@@ -77,7 +79,7 @@ class DisabledWALProvider implements WALProvider {
       providerId = "defaultDisabled";
     }
     disabled = new DisabledWAL(new Path(FSUtils.getWALRootDir(conf), providerId), conf, null);
-    Path walRootDir = FSUtils.getWALRootDir(conf);
+    walRootDir = FSUtils.getWALRootDir(conf);
     this.oldLogDir = new Path(walRootDir, HConstants.HREGION_OLDLOGDIR_NAME);
   }
 
@@ -308,6 +310,7 @@ class DisabledWALProvider implements WALProvider {
 
   @Override
   public WALInfo getFullPath(ServerName serverName, String wal) {
-    return new FSWalInfo(new Path(getWALDirectoryName(serverName.toString()), wal));
+    Path walWithServerName = new Path(getWALDirectoryName(serverName.toString()), wal);
+    return new FSWalInfo(new Path(walRootDir, walWithServerName));
   }
 }

@@ -101,6 +101,8 @@ public class IOTestProvider implements WALProvider {
   private List<WALActionsListener> listeners = new ArrayList<>();
 
   private Path oldLogDir;
+
+  private Path walRootDir;
   /**
    * @param factory factory that made us, identity used for FS layout. may not be null
    * @param conf may not be null
@@ -115,7 +117,7 @@ public class IOTestProvider implements WALProvider {
     this.factory = factory;
     this.conf = conf;
     this.providerId = providerId != null ? providerId : DEFAULT_PROVIDER_ID;
-    Path walRootDir = FSUtils.getWALRootDir(conf);
+    this.walRootDir = FSUtils.getWALRootDir(conf);
     this.oldLogDir = new Path(walRootDir, HConstants.HREGION_OLDLOGDIR_NAME);
   }
 
@@ -330,6 +332,7 @@ public class IOTestProvider implements WALProvider {
 
   @Override
   public WALInfo getFullPath(ServerName serverName, String wal) {
-    return new FSWalInfo(new Path(getWALDirectoryName(serverName.toString()), wal));
+    Path walWithServerName = new Path(getWALDirectoryName(serverName.toString()), wal);
+    return new FSWalInfo(new Path(walRootDir, walWithServerName));
   }
 }

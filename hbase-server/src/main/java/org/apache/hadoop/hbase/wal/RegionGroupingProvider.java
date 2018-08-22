@@ -102,6 +102,7 @@ public class RegionGroupingProvider implements WALProvider {
   }
 
   private Path oldLogDir;
+  private Path walRootDir;
 
   /**
    * instantiate a strategy from a config property.
@@ -122,7 +123,7 @@ public class RegionGroupingProvider implements WALProvider {
     try {
       final RegionGroupingStrategy result = clazz.getDeclaredConstructor().newInstance();
       result.init(conf, providerId);
-      Path walRootDir = FSUtils.getWALRootDir(conf);
+      this.walRootDir = FSUtils.getWALRootDir(conf);
       this.oldLogDir = new Path(walRootDir, HConstants.HREGION_OLDLOGDIR_NAME);
       return result;
     } catch (Exception e) {
@@ -333,7 +334,8 @@ public class RegionGroupingProvider implements WALProvider {
 
   @Override
   public WALInfo getFullPath(ServerName serverName, String wal) {
-    return new FSWalInfo(new Path(getWALDirectoryName(serverName.toString()), wal));
+    Path walWithServerName = new Path(getWALDirectoryName(serverName.toString()), wal);
+    return new FSWalInfo(new Path(walRootDir, walWithServerName));
   }
   
 }

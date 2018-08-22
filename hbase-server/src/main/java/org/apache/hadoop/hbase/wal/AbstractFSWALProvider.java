@@ -100,6 +100,7 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
    * we synchronized on walCreateLock to prevent wal recreation in different threads
    */
   private final Object walCreateLock = new Object();
+  private Path walRootDir;
 
   /**
    * @param factory factory that made us, identity used for FS layout. may not be null
@@ -115,7 +116,7 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
     this.factory = factory;
     this.conf = conf;
     this.providerId = providerId;
-    Path walRootDir = FSUtils.getWALRootDir(conf);
+    walRootDir = FSUtils.getWALRootDir(conf);
     this.oldLogDir = new Path(walRootDir, HConstants.HREGION_OLDLOGDIR_NAME);
     // get log prefix
     StringBuilder sb = new StringBuilder().append(factory.factoryId);
@@ -584,7 +585,8 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
 
   @Override
   public WALInfo getFullPath(ServerName serverName, String wal) {
-    return new FSWalInfo(new Path(getWALDirectoryName(serverName.toString()), wal));
+	Path walWithServerName = new Path(getWALDirectoryName(serverName.toString()), wal);
+    return new FSWalInfo(new Path(walRootDir,walWithServerName));
   }
   
 }

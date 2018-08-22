@@ -966,7 +966,10 @@ public class ReplicationSourceManager implements ReplicationListener {
             }
             oldsources.add(src);
             for (String wal : walsSet) {
-              src.enqueueLog(walProvider.getWalFromArchivePath(wal));
+              WALInfo archivedWal = walProvider.getWalFromArchivePath(wal);
+              if (archivedWal != null) {
+                src.enqueueLog(archivedWal);
+              }
             }
             src.startup();
           }

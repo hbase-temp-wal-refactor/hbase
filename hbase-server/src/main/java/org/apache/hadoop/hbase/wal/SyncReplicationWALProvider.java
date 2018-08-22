@@ -113,6 +113,8 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
 
   private Path oldLogDir;
 
+  private Path walRootDir;
+
   SyncReplicationWALProvider(WALProvider provider) {
     this.provider = provider;
   }
@@ -129,7 +131,7 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
     provider.init(factory, conf, providerId);
     this.conf = conf;
     this.factory = factory;
-    Path walRootDir = FSUtils.getWALRootDir(conf);
+    walRootDir = FSUtils.getWALRootDir(conf);
     this.oldLogDir = new Path(walRootDir, HConstants.HREGION_OLDLOGDIR_NAME);
     Pair<EventLoopGroup, Class<? extends Channel>> eventLoopGroupAndChannelClass =
       NettyAsyncFSWALConfigHelper.getEventLoopConfig(conf);
@@ -395,7 +397,8 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
 
   @Override
   public WALInfo getFullPath(ServerName serverName, String wal) {
-    return new FSWalInfo(new Path(getWALDirectoryName(serverName.toString()), wal));
+    Path walWithServerName = new Path(getWALDirectoryName(serverName.toString()), wal);
+    return new FSWalInfo(new Path(walRootDir, walWithServerName));
   }
 
 }
