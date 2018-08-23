@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -36,6 +37,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.io.util.MemorySizeUtil;
@@ -49,6 +51,7 @@ import org.apache.hadoop.hbase.wal.AbstractFSWALProvider;
 import org.apache.hadoop.hbase.wal.FSWalInfo;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALFactory;
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.wal.WALPrettyPrinter;
 import org.apache.hadoop.hbase.wal.WALProvider.WriterBase;
 import org.apache.hadoop.util.StringUtils;
@@ -96,9 +99,24 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
   protected final FileSystem fs;
 
   /**
+   * WAL directory, where all WAL files would be placed.
+   */
+  protected final Path walDir;
+
+  /**
    * dir path where old logs are kept.
    */
   protected final Path walArchiveDir;
+
+  /**
+   * Matches just those wal files that belong to this wal instance.
+   */
+  protected final PathFilter ourFiles;
+
+  /**
+   * Prefix used when checking for wal membership.
+   */
+  protected final String prefixPathStr;
 
   // If > than this size, roll the log.
   protected long logrollsize;
@@ -122,6 +140,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
       final boolean failIfWALExists, final String prefix, final String suffix)
       throws FailedLogCloseException, IOException {
     super(rootDir, logDir, archiveDir, conf, listeners, failIfWALExists, prefix, suffix);
+    this.walDir = new Path(rootDir, logDir);
     this.walArchiveDir = new Path(rootDir, archiveDir);
     this.fs = fs;
     if (!fs.exists(walDir) && !fs.mkdirs(walDir)) {
@@ -134,6 +153,26 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
       }
     }
 
+    this.prefixPathStr = new Path(walDir, walFilePrefix + WAL_FILE_NAME_DELIMITER).toString();
+
+    this.ourFiles = new PathFilter() {
+      @Override
+      public boolean accept(final Path fileName) {
+        // The path should start with dir/<prefix> and end with our suffix
+        final String fileNameString = fileName.toString();
+        if (!fileNameString.startsWith(prefixPathStr)) {
+          return false;
+        }
+        if (walFileSuffix.isEmpty()) {
+          // in the case of the null suffix, we need to ensure the filename ends with a timestamp.
+          return org.apache.commons.lang3.StringUtils
+              .isNumeric(fileNameString.substring(prefixPathStr.length()));
+        } else if (!fileNameString.endsWith(walFileSuffix)) {
+          return false;
+        }
+        return true;
+      }
+    };
     // If prefix is null||empty then just name it wal
     this.walFilePrefix =
       prefix == null || prefix.isEmpty() ? "wal" : URLEncoder.encode(prefix, "UTF8");
@@ -173,6 +212,61 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
     }
     this.maxLogs = conf.getInt("hbase.regionserver.maxlogs",
       Math.max(32, calculateMaxLogFiles(conf, logrollsize)));
+  }
+
+  /**
+   * This is a convenience method that computes a new filename with a given file-number.
+   * @param filenum to use
+   * @return Path
+   */
+  protected Path computeFilename(final long filenum) {
+    if (filenum < 0) {
+      throw new RuntimeException("WAL file number can't be < 0");
+    }
+    String child = walFilePrefix + WAL_FILE_NAME_DELIMITER + filenum + walFileSuffix;
+    return new Path(walDir, child);
+  }
+
+  /**
+   * This is a convenience method that computes a new filename with a given using the current WAL
+   * file-number
+   * @return Path
+   */
+  public Path getCurrentFileName() {
+    return computeFilename(this.filenum.get());
+  }
+
+  @VisibleForTesting
+  Path getOldPath() {
+    long currentFilenum = this.filenum.get();
+    Path oldPath = null;
+    if (currentFilenum > 0) {
+      // ComputeFilename will take care of meta wal filename
+      oldPath = computeFilename(currentFilenum);
+    } // I presume if currentFilenum is <= 0, this is first file and null for oldPath if fine?
+    return oldPath;
+  }
+
+  /**
+   * if the given {@code path} is being written currently, then return its length.
+   * <p>
+   * This is used by replication to prevent replicating unacked log entries. See
+   * https://issues.apache.org/jira/browse/HBASE-14004 for more details.
+   */
+  @Override
+  public OptionalLong getLogFileSizeIfBeingWritten(WALInfo path) {
+    rollWriterLock.lock();
+    try {
+      Path currentPath = getOldPath();
+      if (path.getPath().equals(currentPath)) {
+        W writer = this.writer;
+        return writer != null ? OptionalLong.of(writer.getLength()) : OptionalLong.empty();
+      } else {
+        return OptionalLong.empty();
+      }
+    } finally {
+      rollWriterLock.unlock();
+    }
   }
 
   // public only until class moves to o.a.h.h.wal

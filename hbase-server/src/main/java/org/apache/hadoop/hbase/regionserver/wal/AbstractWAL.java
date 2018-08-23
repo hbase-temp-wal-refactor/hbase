@@ -26,7 +26,6 @@ import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -41,7 +40,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.PrivateCellUtil;
@@ -101,16 +99,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
   private static final int DEFAULT_WAL_SYNC_TIMEOUT_MS = 5 * 60 * 1000; // in ms, 5min
 
   /**
-   * WAL directory, where all WAL files would be placed.
-   */
-  protected final Path walDir;
-
-  /**
-   * Matches just those wal files that belong to this wal instance.
-   */
-  protected final PathFilter ourFiles;
-
-  /**
    * Prefix of a WAL file, usually the region server name it is hosted on.
    */
   protected String walFilePrefix;
@@ -119,11 +107,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
    * Suffix included on generated wal file names
    */
   protected final String walFileSuffix;
-
-  /**
-   * Prefix used when checking for wal membership.
-   */
-  protected final String prefixPathStr;
 
   protected final WALCoprocessorHost coprocessorHost;
 
@@ -269,7 +252,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
       final String archiveDir, final Configuration conf, final List<WALActionsListener> listeners,
       final boolean failIfWALExists, final String prefix, final String suffix)
       throws FailedLogCloseException, IOException {
-    this.walDir = new Path(rootDir, logDir);
     this.conf = conf;
 
     // If prefix is null||empty then just name it wal
@@ -281,26 +263,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
         "' but instead was '" + suffix + "'");
     }
     this.walFileSuffix = (suffix == null) ? "" : URLEncoder.encode(suffix, "UTF8");
-    this.prefixPathStr = new Path(walDir, walFilePrefix + WAL_FILE_NAME_DELIMITER).toString();
-
-    this.ourFiles = new PathFilter() {
-      @Override
-      public boolean accept(final Path fileName) {
-        // The path should start with dir/<prefix> and end with our suffix
-        final String fileNameString = fileName.toString();
-        if (!fileNameString.startsWith(prefixPathStr)) {
-          return false;
-        }
-        if (walFileSuffix.isEmpty()) {
-          // in the case of the null suffix, we need to ensure the filename ends with a timestamp.
-          return org.apache.commons.lang3.StringUtils
-              .isNumeric(fileNameString.substring(prefixPathStr.length()));
-        } else if (!fileNameString.endsWith(walFileSuffix)) {
-          return false;
-        }
-        return true;
-      }
-    };
 
     // Register listeners. TODO: Should this exist anymore? We have CPs?
     if (listeners != null) {
@@ -311,8 +273,7 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
     this.coprocessorHost = new WALCoprocessorHost(this, conf);
 
     LOG.info("WAL configuration: blocksize=" + StringUtils.byteDesc(blocksize) + ", prefix=" +
-      this.walFilePrefix + ", suffix=" +
-      walFileSuffix + ", logDir=" + this.walDir);
+      this.walFilePrefix + ", suffix=" + walFileSuffix);
     this.slowSyncNs = TimeUnit.MILLISECONDS
         .toNanos(conf.getInt("hbase.regionserver.hlog.slowsync.ms", DEFAULT_SLOW_SYNC_TIME_MS));
     this.walSyncTimeoutNs = TimeUnit.MILLISECONDS
@@ -387,39 +348,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
   @Override
   public byte[][] rollWriter() throws FailedLogCloseException, IOException {
     return rollWriter(false);
-  }
-
-  /**
-   * This is a convenience method that computes a new filename with a given file-number.
-   * @param filenum to use
-   * @return Path
-   */
-  protected Path computeFilename(final long filenum) {
-    if (filenum < 0) {
-      throw new RuntimeException("WAL file number can't be < 0");
-    }
-    String child = walFilePrefix + WAL_FILE_NAME_DELIMITER + filenum + walFileSuffix;
-    return new Path(walDir, child);
-  }
-
-  /**
-   * This is a convenience method that computes a new filename with a given using the current WAL
-   * file-number
-   * @return Path
-   */
-  public Path getCurrentFileName() {
-    return computeFilename(this.filenum.get());
-  }
-
-  @VisibleForTesting
-  Path getOldPath() {
-    long currentFilenum = this.filenum.get();
-    Path oldPath = null;
-    if (currentFilenum > 0) {
-      // ComputeFilename will take care of meta wal filename
-      oldPath = computeFilename(currentFilenum);
-    } // I presume if currentFilenum is <= 0, this is first file and null for oldPath if fine?
-    return oldPath;
   }
 
   /**
@@ -683,28 +611,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
   @Override
   public String toString() {
     return implClassName + " " + walFilePrefix + ":" + walFileSuffix + "(num " + filenum + ")";
-  }
-
-  /**
-   * if the given {@code path} is being written currently, then return its length.
-   * <p>
-   * This is used by replication to prevent replicating unacked log entries. See
-   * https://issues.apache.org/jira/browse/HBASE-14004 for more details.
-   */
-  @Override
-  public OptionalLong getLogFileSizeIfBeingWritten(WALInfo path) {
-    rollWriterLock.lock();
-    try {
-      Path currentPath = getOldPath();
-      if (path.getPath().equals(currentPath)) {
-        W writer = this.writer;
-        return writer != null ? OptionalLong.of(writer.getLength()) : OptionalLong.empty();
-      } else {
-        return OptionalLong.empty();
-      }
-    } finally {
-      rollWriterLock.unlock();
-    }
   }
 
   /**
