@@ -19,21 +19,17 @@ package org.apache.hadoop.hbase.regionserver.wal;
 
 import static org.apache.hadoop.hbase.wal.AbstractFSWALProvider.WAL_FILE_NAME_DELIMITER;
 import static org.apache.hbase.thirdparty.com.google.common.base.Preconditions.checkArgument;
-import static org.apache.hbase.thirdparty.com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.URLEncoder;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentNavigableMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -53,7 +49,6 @@ import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.exceptions.TimeoutIOException;
 import org.apache.hadoop.hbase.regionserver.MultiVersionConcurrencyControl;
 import org.apache.hadoop.hbase.trace.TraceUtil;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.CollectionUtils;
 import org.apache.hadoop.hbase.util.CommonFSUtils;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
@@ -109,11 +104,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
    * WAL directory, where all WAL files would be placed.
    */
   protected final Path walDir;
-
-  /**
-   * dir path where old logs are kept.
-   */
-  protected final Path walArchiveDir;
 
   /**
    * Matches just those wal files that belong to this wal instance.
@@ -211,13 +201,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
   protected volatile boolean closed = false;
 
   protected final AtomicBoolean shutdown = new AtomicBoolean(false);
-  /**
-   * WAL Comparator; it compares the timestamp (log filenum), present in the log file name. Throws
-   * an IllegalArgumentException if used to compare paths from different wals.
-   */
-  final Comparator<Path> LOG_NAME_COMPARATOR =
-    (o1, o2) -> Long.compare(getFileNumFromFileName(o1), getFileNumFromFileName(o2));
-
   protected static final class WalProps {
 
     /**
@@ -237,13 +220,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
       this.logSize = logSize;
     }
   }
-
-  /**
-   * Map of WAL log file to properties. The map is sorted by the log file creation timestamp
-   * (contained in the log file name).
-   */
-  protected ConcurrentNavigableMap<Path, WalProps> walFile2Props =
-    new ConcurrentSkipListMap<>(LOG_NAME_COMPARATOR);
 
   /**
    * Map of {@link SyncFuture}s keyed by Handler objects. Used so we reuse SyncFutures.
@@ -266,24 +242,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
 
   public long getFilenum() {
     return this.filenum.get();
-  }
-
-  /**
-   * A log file has a creation timestamp (in ms) in its file name ({@link #filenum}. This helper
-   * method returns the creation timestamp from a given log file. It extracts the timestamp assuming
-   * the filename is created with the {@link #computeFilename(long filenum)} method.
-   * @return timestamp, as in the log file name.
-   */
-  protected long getFileNumFromFileName(Path fileName) {
-    checkNotNull(fileName, "file name can't be null");
-    if (!ourFiles.accept(fileName)) {
-      throw new IllegalArgumentException(
-          "The log file " + fileName + " doesn't belong to this WAL. (" + toString() + ")");
-    }
-    final String fileNameString = fileName.toString();
-    String chompedPath = fileNameString.substring(prefixPathStr.length(),
-      (fileNameString.length() - walFileSuffix.length()));
-    return Long.parseLong(chompedPath);
   }
 
   // must be power of 2
@@ -312,7 +270,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
       final boolean failIfWALExists, final String prefix, final String suffix)
       throws FailedLogCloseException, IOException {
     this.walDir = new Path(rootDir, logDir);
-    this.walArchiveDir = new Path(rootDir, archiveDir);
     this.conf = conf;
 
     // If prefix is null||empty then just name it wal
@@ -355,7 +312,7 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
 
     LOG.info("WAL configuration: blocksize=" + StringUtils.byteDesc(blocksize) + ", prefix=" +
       this.walFilePrefix + ", suffix=" +
-      walFileSuffix + ", logDir=" + this.walDir + ", archiveDir=" + this.walArchiveDir);
+      walFileSuffix + ", logDir=" + this.walDir);
     this.slowSyncNs = TimeUnit.MILLISECONDS
         .toNanos(conf.getInt("hbase.regionserver.hlog.slowsync.ms", DEFAULT_SLOW_SYNC_TIME_MS));
     this.walSyncTimeoutNs = TimeUnit.MILLISECONDS
@@ -493,68 +450,12 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
     coprocessorHost.postWALRoll(oldPath, newPath);
   }
 
-  // public only until class moves to o.a.h.h.wal
-  /** @return the number of rolled log files */
-  public int getNumRolledLogFiles() {
-    return walFile2Props.size();
-  }
-
-  // public only until class moves to o.a.h.h.wal
-  /** @return the number of log files in use */
-  public int getNumLogFiles() {
-    // +1 for current use log
-    return getNumRolledLogFiles() + 1;
-  }
-
-  /**
-   * If the number of un-archived WAL files is greater than maximum allowed, check the first
-   * (oldest) WAL file, and returns those regions which should be flushed so that it can be
-   * archived.
-   * @return regions (encodedRegionNames) to flush in order to archive oldest WAL file.
-   */
-  byte[][] findRegionsToForceFlush() throws IOException {
-    byte[][] regions = null;
-    int logCount = getNumRolledLogFiles();
-    if (logCount > this.maxLogs && logCount > 0) {
-      Map.Entry<Path, WalProps> firstWALEntry = this.walFile2Props.firstEntry();
-      regions =
-        this.sequenceIdAccounting.findLower(firstWALEntry.getValue().encodedName2HighestSequenceId);
-    }
-    if (regions != null) {
-      StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < regions.length; i++) {
-        if (i > 0) {
-          sb.append(", ");
-        }
-        sb.append(Bytes.toStringBinary(regions[i]));
-      }
-      LOG.info("Too many WALs; count=" + logCount + ", max=" + this.maxLogs +
-        "; forcing flush of " + regions.length + " regions(s): " + sb.toString());
-    }
-    return regions;
-  }
-
   /*
    * only public so WALSplitter can use.
    * @return archived location of a WAL file with the given path p
    */
   public static Path getWALArchivePath(Path archiveDir, Path p) {
     return new Path(archiveDir, p.getName());
-  }
-
-  protected final void logRollAndSetupWalProps(Path oldPath, Path newPath, long oldFileLen) {
-    int oldNumEntries = this.numEntries.getAndSet(0);
-    String newPathString = newPath != null ? CommonFSUtils.getPath(newPath) : null;
-    if (oldPath != null) {
-      this.walFile2Props.put(oldPath,
-        new WalProps(this.sequenceIdAccounting.resetHighest(), oldFileLen));
-      this.totalLogSize.addAndGet(oldFileLen);
-      LOG.info("Rolled WAL {} with entries={}, filesize={}; new WAL {}",
-        CommonFSUtils.getPath(oldPath), oldNumEntries, StringUtils.byteDesc(oldFileLen),
-        newPathString);
-    } else {
-      LOG.info("New WAL {}", newPathString);
-    }
   }
 
   /**
