@@ -80,7 +80,7 @@ import org.slf4j.LoggerFactory;
  * (Need to keep our own file lengths, not rely on HDFS).
  */
 @InterfaceAudience.Private
-public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL {
+public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W> {
 
   private static final Logger LOG = LoggerFactory.getLogger(AbstractFSWAL.class);
 
