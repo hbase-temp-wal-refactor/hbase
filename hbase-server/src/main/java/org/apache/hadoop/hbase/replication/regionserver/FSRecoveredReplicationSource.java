@@ -59,7 +59,7 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource{
     PriorityBlockingQueue<WALInfo> newPaths =
         new PriorityBlockingQueue<WALInfo>(queueSizePerGroup, new LogsComparator());
     pathsLoop: for (WALInfo path : queue) {
-      if (walProvider.getWalMetaDataTracker().exists(path.getPath().toString())) { // still in same location, don't need to do anything
+      if (walProvider.getWalMetaDataTracker().exists(((FSWalInfo)path).getPath().toString())) { // still in same location, don't need to do anything
         newPaths.add(path);
         continue;
       }
@@ -122,7 +122,7 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource{
     for (WALInfo rs : rss) {
       WALInfo[] logs = walProvider.getWalMetaDataTracker().list(rs);
       for (WALInfo log : logs) {
-        WALInfo p = this.walProvider.createWalInfo(new Path(rs.getPath(), log.getName()).toString());
+        WALInfo p = this.walProvider.createWalInfo(new Path(((FSWalInfo)rs).getPath(), log.getName()).toString());
         if (p.getName().equals(path.getName())) {
           LOG.info("Log " + p.getName() + " found at " + p);
           return p;

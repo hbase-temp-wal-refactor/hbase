@@ -317,7 +317,8 @@ public class TestLogRolling extends AbstractTestLogRolling {
       // read back the data written
       Set<String> loggedRows = new HashSet<>();
       FSUtils fsUtils = FSUtils.getInstance(fs, TEST_UTIL.getConfiguration());
-      for (WALInfo p : paths) {
+      for (WALInfo wi : paths) {
+        FSWalInfo p = (FSWalInfo)wi;
         LOG.debug("recovering lease for " + p);
         fsUtils.recoverFileLease(((HFileSystem) fs).getBackingFs(), p.getPath(), TEST_UTIL.getConfiguration(),
           null);

@@ -68,7 +68,7 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
     final long trailerSize = currentTrailerSize();
     FileStatus stat = null;
     try {
-      stat = fs.getFileStatus(this.currentPath.getPath());
+      stat = fs.getFileStatus(((FSWalInfo)this.currentPath).getPath());
     } catch (IOException exception) {
       LOG.warn("Couldn't get file length information about log {}, it {} closed cleanly {}",
         currentPath, trailerSize < 0 ? "was not" : "was", getCurrentPathStat());
@@ -167,13 +167,13 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
     try {
       throw e;
     } catch (FileNotFoundException fnfe) {
-      handleFileNotFound(path.getPath(), fnfe);
+      handleFileNotFound(((FSWalInfo)path).getPath(), fnfe);
     } catch (EOFException eo) {
       handleEofException(eo);
     } catch (LeaseNotRecoveredException lnre) {
       // HBASE-15019 the WAL was not closed due to some hiccup.
       LOG.warn("Try to recover the WAL lease " + currentPath, lnre);
-      recoverLease(conf, currentPath.getPath());
+      recoverLease(conf, ((FSWalInfo)currentPath).getPath());
       reader = null;
     }
   }
@@ -194,7 +194,7 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
     if ((e instanceof EOFException || e.getCause() instanceof EOFException) && logQueue.size() > 1
         && this.eofAutoRecovery) {
       try {
-        if (fs.getFileStatus(logQueue.peek().getPath()).getLen() == 0) {
+        if (fs.getFileStatus(((FSWalInfo)logQueue.peek()).getPath()).getLen() == 0) {
           LOG.warn("Forcing removal of 0 length log in queue: " + logQueue.peek());
           logQueue.remove();
           setPosition(0);
@@ -218,7 +218,7 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
 
   @Override
   protected Reader createReader(WALInfo path, Configuration conf) throws IOException {
-    return WALFactory.createReader(fs, path.getPath(), conf);
+    return WALFactory.createReader(fs, ((FSWalInfo)path).getPath(), conf);
   }
 
 }

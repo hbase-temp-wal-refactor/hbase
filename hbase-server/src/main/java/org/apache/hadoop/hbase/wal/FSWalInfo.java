@@ -71,7 +71,9 @@ public class FSWalInfo implements WALInfo{
     return -1;
   }
 
-  @Override
+  /**
+   * @return {@link Path} object of the name encapsulated in WalInfo
+   */
   public Path getPath() {
     return path;
   }

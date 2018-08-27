@@ -15,61 +15,59 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hadoop.hbase.wal;
+package org.apache.hadoop.hbase.regionserver.wal;
 
 import java.io.IOException;
-import org.apache.hadoop.fs.Path;
+
+import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
 
-/**
- * 
- */
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public interface WALInfo extends Comparable<WALInfo> {
+public class WalInfoImpl implements WALInfo {
 
-  WALInfo UNKNOWN = new WALInfo() {
-    
-    @Override
-    public long getWalStartTime() {
-      return 0;
+  private String name;
+  
+  public WalInfoImpl(String name) {
+    this.name=name;
+  }
+
+  @Override
+  public int compareTo(WALInfo o) {
+    return this.getName().compareTo(o.getName());
+  }
+
+  @Override
+  public String getName() {
+    return this.name;
+  }
+
+  @Override
+  public long getWalStartTime() {
+    // TODO Implement WALInfo.getWalStartTime
+    return 0;
+  }
+
+  @Override
+  public long getSize() throws IOException {
+    // TODO Implement WALInfo.getSize
+    return 0;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) return false;
+    if (obj instanceof WALInfo) {
+      WALInfo info = (WALInfo) obj;
+      if (this.name.equals(info.getName())) return true;
     }
-    
-    @Override
-    public long getSize() throws IOException{
-      return 0;
-    }
-    
-    @Override
-    public String getName() {
-      return "UNKNOWN";
-    }
-
-    @Override
-    public int compareTo(WALInfo o) {
-      return 0;
-    }
-  };
-
-  /**
-   * For the FS based path, it will be just a file name of whole path
-   * For stream based, it will be name of the stream 
-   * @return name of the wal
-   */
-  String getName();
-
-  /**
-   * Starting time of the wal which help in sorting against the others
-   * @return start time of the wal
-   */
-  long getWalStartTime();
-
-  /**
-   * Used for getting the size of the Wal
-   * @return size of the log stream or file
-   * @throws IOException
-   */
-  long getSize() throws IOException;
+    return false;
+  }
+  
+  @Override
+  public int hashCode() {
+    return this.name.hashCode();
+  }
 
 }
