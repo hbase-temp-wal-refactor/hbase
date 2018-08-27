@@ -139,7 +139,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
       final String archiveDir, final Configuration conf, final List<WALActionsListener> listeners,
       final boolean failIfWALExists, final String prefix, final String suffix)
       throws FailedLogCloseException, IOException {
-    super(rootDir, logDir, archiveDir, conf, listeners, failIfWALExists, prefix, suffix);
+    super(conf, listeners, failIfWALExists, prefix, suffix);
     this.walDir = new Path(rootDir, logDir);
     this.walArchiveDir = new Path(rootDir, archiveDir);
     this.fs = fs;
@@ -461,6 +461,14 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
   @VisibleForTesting
   FileStatus[] getFiles() throws IOException {
     return CommonFSUtils.listStatus(fs, walDir, ourFiles);
+  }
+
+  /*
+   * only public so WALSplitter can use.
+   * @return archived location of a WAL file with the given path p
+   */
+  public static Path getWALArchivePath(Path archiveDir, Path p) {
+    return new Path(archiveDir, p.getName());
   }
 
   @Override

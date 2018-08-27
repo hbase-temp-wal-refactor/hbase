@@ -52,7 +52,6 @@ import org.apache.hadoop.hbase.util.CommonFSUtils;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALEdit;
-import org.apache.hadoop.hbase.wal.WALFactory;
 import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.wal.WALKeyImpl;
 import org.apache.hadoop.hbase.wal.WALProvider.WriterBase;
@@ -77,8 +76,6 @@ import com.lmax.disruptor.RingBuffer;
  * <code>F</code> when all of the edits in <code>F</code> have a log-sequence-id that's older
  * (smaller) than the most-recent flush.
  * <p>
- * To read an WAL, call
- * {@link WALFactory#createReader(org.apache.hadoop.fs.FileSystem, org.apache.hadoop.fs.Path)}. *
  * <h2>Failure Semantic</h2> If an exception on append or sync, roll the WAL because the current WAL
  * is now a lame duck; any more appends or syncs will fail also with the same original exception. If
  * we have made successful appends to the WAL and we then are unable to sync them, our current
@@ -248,8 +245,8 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
     return floor << 1;
   }
 
-  protected AbstractWAL(final Path rootDir, final String logDir,
-      final String archiveDir, final Configuration conf, final List<WALActionsListener> listeners,
+  protected AbstractWAL(
+      final Configuration conf, final List<WALActionsListener> listeners,
       final boolean failIfWALExists, final String prefix, final String suffix)
       throws FailedLogCloseException, IOException {
     this.conf = conf;
@@ -353,13 +350,13 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
   /**
    * Tell listeners about pre log roll.
    */
-  protected void tellListenersAboutPreLogRoll(final WALInfo oldPath, final WALInfo newPath)
+  protected void tellListenersAboutPreLogRoll(final WALInfo oldInfo, final WALInfo newInfo)
       throws IOException {
-    coprocessorHost.preWALRoll(oldPath, newPath);
+    coprocessorHost.preWALRoll(oldInfo, newInfo);
 
     if (!this.listeners.isEmpty()) {
       for (WALActionsListener i : this.listeners) {
-        i.preLogRoll(oldPath, newPath);
+        i.preLogRoll(oldInfo, newInfo);
       }
     }
   }
@@ -376,14 +373,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
     }
 
     coprocessorHost.postWALRoll(oldPath, newPath);
-  }
-
-  /*
-   * only public so WALSplitter can use.
-   * @return archived location of a WAL file with the given path p
-   */
-  public static Path getWALArchivePath(Path archiveDir, Path p) {
-    return new Path(archiveDir, p.getName());
   }
 
   /**
