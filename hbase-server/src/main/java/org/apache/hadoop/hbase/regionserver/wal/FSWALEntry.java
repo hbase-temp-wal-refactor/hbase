@@ -28,6 +28,7 @@ import java.util.TreeSet;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellComparator;
 import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.HBaseInterfaceAudience;
 import org.apache.hadoop.hbase.PrivateCellUtil;
 import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.regionserver.MultiVersionConcurrencyControl;
@@ -41,15 +42,15 @@ import org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesti
 import org.apache.hbase.thirdparty.org.apache.commons.collections4.CollectionUtils;
 
 /**
- * A WAL Entry for {@link AbstractFSWAL} implementation.  Immutable.
+ * A WAL Entry for {@link AbstractWAL} implementation.  Immutable.
  * A subclass of {@link Entry} that carries extra info across the ring buffer such as
  * region sequence id (we want to use this later, just before we write the WAL to ensure region
  * edits maintain order).  The extra info added here is not 'serialized' as part of the WALEdit
  * hence marked 'transient' to underline this fact.  It also adds mechanism so we can wait on
  * the assign of the region sequence id.  See #stampRegionSequenceId().
  */
-@InterfaceAudience.Private
-class FSWALEntry extends Entry {
+@InterfaceAudience.LimitedPrivate(HBaseInterfaceAudience.COPROC)
+public class FSWALEntry extends Entry {
   // The below data members are denoted 'transient' just to highlight these are not persisted;
   // they are only in memory and held here while passing over the ring buffer.
   private final transient long txid;
