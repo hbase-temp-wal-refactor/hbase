@@ -49,7 +49,7 @@ import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.wal.AbstractFSWALProvider;
-import org.apache.hadoop.hbase.wal.FSWalInfo;
+import org.apache.hadoop.hbase.wal.FSWALInfo;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALFactory;
 import org.apache.hadoop.hbase.wal.WALInfo;
@@ -263,8 +263,8 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
     rollWriterLock.lock();
     try {
       Path currentPath = getOldPath();
-      if (path instanceof FSWalInfo &&
-          ((FSWalInfo)path).getPath().equals(currentPath)) {
+      if (path instanceof FSWALInfo &&
+          ((FSWALInfo)path).getPath().equals(currentPath)) {
         W writer = this.writer;
         return writer != null ? OptionalLong.of(writer.getLength()) : OptionalLong.empty();
       } else {
@@ -372,7 +372,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
     // Tell our listeners that a log is going to be archived.
     if (!this.listeners.isEmpty()) {
       for (Object i : this.listeners) {
-        ((WALActionsListener)i).preLogArchive(new FSWalInfo(p), new FSWalInfo(newPath));
+        ((WALActionsListener)i).preLogArchive(new FSWALInfo(p), new FSWALInfo(newPath));
       }
     }
     LOG.info("Archiving " + p + " to " + newPath);
@@ -382,7 +382,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
     // Tell our listeners that a log has been archived.
     if (!this.listeners.isEmpty()) {
       for (Object i : this.listeners) {
-        ((WALActionsListener)i).postLogArchive(new FSWalInfo(p), new FSWalInfo(newPath));
+        ((WALActionsListener)i).postLogArchive(new FSWALInfo(p), new FSWALInfo(newPath));
       }
     }
   }
@@ -434,10 +434,10 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
         Path newPath = getNewPath();
         // Any exception from here on is catastrophic, non-recoverable so we currently abort.
         W nextWriter = (W) this.createWriterInstance(newPath);
-        tellListenersAboutPreLogRoll(new FSWalInfo(oldPath), new FSWalInfo(newPath));
+        tellListenersAboutPreLogRoll(new FSWALInfo(oldPath), new FSWALInfo(newPath));
         // NewPath could be equal to oldPath if replaceWriter fails.
         newPath = replaceWriter(oldPath, newPath, nextWriter);
-        tellListenersAboutPostLogRoll(new FSWalInfo(oldPath), new FSWalInfo(newPath));
+        tellListenersAboutPostLogRoll(new FSWALInfo(oldPath), new FSWALInfo(newPath));
         if (LOG.isDebugEnabled()) {
           LOG.debug("Create new " + implClassName + " writer with pipeline: " +
             Arrays.toString(getPipeline()));
@@ -487,7 +487,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
         // Tell our listeners that a log is going to be archived.
         if (!this.listeners.isEmpty()) {
           for (Object i : this.listeners) {
-            ((WALActionsListener)i).preLogArchive(new FSWalInfo(file.getPath()), new FSWalInfo(p));
+            ((WALActionsListener)i).preLogArchive(new FSWALInfo(file.getPath()), new FSWALInfo(p));
           }
         }
 
@@ -497,7 +497,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
         // Tell our listeners that a log was archived.
         if (!this.listeners.isEmpty()) {
           for (Object i : this.listeners) {
-            ((WALActionsListener)i).postLogArchive(new FSWalInfo(file.getPath()), new FSWalInfo(p));
+            ((WALActionsListener)i).postLogArchive(new FSWALInfo(file.getPath()), new FSWALInfo(p));
           }
         }
       }

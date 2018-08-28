@@ -570,7 +570,7 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
   
   @Override
   public WALInfo createWalInfo(String wal) {
-    return new FSWalInfo(wal);
+    return new FSWALInfo(wal);
   }
   
   @Override
@@ -580,13 +580,13 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
   
   @Override
   public WALInfo getWalFromArchivePath(String wal) {
-    return new FSWalInfo(new Path(oldLogDir, wal));
+    return new FSWALInfo(new Path(oldLogDir, wal));
   }
 
   @Override
   public WALInfo getFullPath(ServerName serverName, String wal) {
 	Path walWithServerName = new Path(getWALDirectoryName(serverName.toString()), wal);
-    return new FSWalInfo(new Path(walRootDir,walWithServerName));
+    return new FSWALInfo(new Path(walRootDir,walWithServerName));
   }
   
 }

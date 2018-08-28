@@ -26,20 +26,20 @@ import org.apache.yetus.audience.InterfaceStability;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public class FSWalInfo implements WALInfo{
+public class FSWALInfo implements WALInfo{
   private static final Pattern WAL_FILE_NAME_PATTERN =
       Pattern.compile("(.+)\\.(\\d+)(\\.[0-9A-Za-z]+)?");
   private String name;
   private Path path;
 
-  public FSWalInfo(String name) {
+  public FSWALInfo(String name) {
     this.path = new Path(name);
     if (path != null) {
       this.name = path.getName();
     }
   }
   
-  public FSWalInfo(Path path) {
+  public FSWALInfo(Path path) {
     this.path = path;
     if(path !=null){
       this.name = path.getName();
@@ -80,7 +80,7 @@ public class FSWalInfo implements WALInfo{
 
   @Override
   public int compareTo(WALInfo o) {
-    FSWalInfo that = (FSWalInfo)o;
+    FSWALInfo that = (FSWALInfo)o;
     return this.path.compareTo(that.getPath());
   }
   
@@ -91,10 +91,10 @@ public class FSWalInfo implements WALInfo{
   
   @Override
   public boolean equals(Object obj) {
-    if (!(obj instanceof FSWalInfo)) {
+    if (!(obj instanceof FSWALInfo)) {
       return false;
     }
-    FSWalInfo that = (FSWalInfo) obj;
+    FSWALInfo that = (FSWALInfo) obj;
     return this.path.equals(that.getPath());
   }
 }

@@ -317,7 +317,7 @@ public class IOTestProvider implements WALProvider {
 
   @Override
   public WALInfo createWalInfo(String wal) {
-    return new FSWalInfo(new Path(wal));
+    return new FSWALInfo(new Path(wal));
   }
   
   @Override
@@ -327,12 +327,12 @@ public class IOTestProvider implements WALProvider {
   
   @Override
   public WALInfo getWalFromArchivePath(String wal) {
-    return new FSWalInfo(new Path(oldLogDir, wal));
+    return new FSWALInfo(new Path(oldLogDir, wal));
   }
 
   @Override
   public WALInfo getFullPath(ServerName serverName, String wal) {
     Path walWithServerName = new Path(getWALDirectoryName(serverName.toString()), wal);
-    return new FSWalInfo(new Path(walRootDir, walWithServerName));
+    return new FSWALInfo(new Path(walRootDir, walWithServerName));
   }
 }

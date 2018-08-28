@@ -56,7 +56,7 @@ import org.apache.hadoop.hbase.replication.WALEntryFilter;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
 import org.apache.hadoop.hbase.testclassification.ReplicationTests;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.hbase.wal.FSWalInfo;
+import org.apache.hadoop.hbase.wal.FSWALInfo;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WALEdit;
@@ -434,7 +434,7 @@ public class TestWALEntryStream {
 
       @Override
       public boolean evaluate() throws Exception {
-        return fs.getFileStatus(((FSWalInfo)walPath).getPath()).getLen() > 0;
+        return fs.getFileStatus(((FSWALInfo)walPath).getPath()).getLen() > 0;
       }
 
       @Override
@@ -443,7 +443,7 @@ public class TestWALEntryStream {
       }
 
     });
-    long walLength = fs.getFileStatus(((FSWalInfo)walPath).getPath()).getLen();
+    long walLength = fs.getFileStatus(((FSWALInfo)walPath).getPath()).getLen();
 
     ReplicationSourceWALReader reader = createReader(false, CONF);
 

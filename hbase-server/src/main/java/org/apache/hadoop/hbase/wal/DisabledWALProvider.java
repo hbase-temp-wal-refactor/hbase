@@ -140,14 +140,14 @@ class DisabledWALProvider implements WALProvider {
         }
         for (WALActionsListener listener : listeners) {
           try {
-            listener.preLogRoll(new FSWalInfo(path), new FSWalInfo(path));
+            listener.preLogRoll(new FSWALInfo(path), new FSWALInfo(path));
           } catch (IOException exception) {
             LOG.debug("Ignoring exception from listener.", exception);
           }
         }
         for (WALActionsListener listener : listeners) {
           try {
-            listener.postLogRoll(new FSWalInfo(path), new FSWalInfo(path));
+            listener.postLogRoll(new FSWALInfo(path), new FSWALInfo(path));
           } catch (IOException exception) {
             LOG.debug("Ignoring exception from listener.", exception);
           }
@@ -295,7 +295,7 @@ class DisabledWALProvider implements WALProvider {
 
   @Override
   public WALInfo createWalInfo(String wal) {
-    return new FSWalInfo(wal);
+    return new FSWALInfo(wal);
   }
   
   @Override
@@ -305,12 +305,12 @@ class DisabledWALProvider implements WALProvider {
 
   @Override
   public WALInfo getWalFromArchivePath(String wal) {
-    return new FSWalInfo(new Path(oldLogDir, wal));
+    return new FSWALInfo(new Path(oldLogDir, wal));
   }
 
   @Override
   public WALInfo getFullPath(ServerName serverName, String wal) {
     Path walWithServerName = new Path(getWALDirectoryName(serverName.toString()), wal);
-    return new FSWalInfo(new Path(walRootDir, walWithServerName));
+    return new FSWALInfo(new Path(walRootDir, walWithServerName));
   }
 }

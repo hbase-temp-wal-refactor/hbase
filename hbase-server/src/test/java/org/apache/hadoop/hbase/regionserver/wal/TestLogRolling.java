@@ -52,7 +52,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.JVMClusterUtil;
 import org.apache.hadoop.hbase.wal.AbstractFSWALProvider;
-import org.apache.hadoop.hbase.wal.FSWalInfo;
+import org.apache.hadoop.hbase.wal.FSWALInfo;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALFactory;
 import org.apache.hadoop.hbase.wal.WALInfo;
@@ -256,7 +256,7 @@ public class TestLogRolling extends AbstractTestLogRolling {
       final List<WALInfo> paths = new ArrayList<>(1);
       final List<Integer> preLogRolledCalled = new ArrayList<>();
 
-      paths.add(new FSWalInfo(AbstractFSWALProvider.getCurrentFileName(log)));
+      paths.add(new FSWALInfo(AbstractFSWALProvider.getCurrentFileName(log)));
       log.registerWALActionsListener(new WALActionsListener() {
 
         @Override
@@ -318,7 +318,7 @@ public class TestLogRolling extends AbstractTestLogRolling {
       Set<String> loggedRows = new HashSet<>();
       FSUtils fsUtils = FSUtils.getInstance(fs, TEST_UTIL.getConfiguration());
       for (WALInfo wi : paths) {
-        FSWalInfo p = (FSWalInfo)wi;
+        FSWALInfo p = (FSWALInfo)wi;
         LOG.debug("recovering lease for " + p);
         fsUtils.recoverFileLease(((HFileSystem) fs).getBackingFs(), p.getPath(), TEST_UTIL.getConfiguration(),
           null);

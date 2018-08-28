@@ -57,7 +57,7 @@ import org.apache.hadoop.hbase.replication.regionserver.ReplicationSourceManager
 import org.apache.hadoop.hbase.testclassification.MediumTests;
 import org.apache.hadoop.hbase.testclassification.ReplicationTests;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.hbase.wal.FSWalInfo;
+import org.apache.hadoop.hbase.wal.FSWALInfo;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALEdit;
 import org.apache.hadoop.hbase.wal.WALFactory;
@@ -304,7 +304,7 @@ public class TestReplicationSource {
     ServerName serverName = ServerName.valueOf("www.example.com", 12006, 1524679704418L);
     ServerName deadServer = ServerName.valueOf("www.deadServer.com", 12006, 1524679704419L);
     PriorityBlockingQueue<WALInfo> queue = new PriorityBlockingQueue<>();
-    queue.put(new FSWalInfo(new Path("/www/html/test")));
+    queue.put(new FSWALInfo(new Path("/www/html/test")));
     RecoveredReplicationSource source = Mockito.mock(RecoveredReplicationSource.class);
     Server server = Mockito.mock(Server.class);
     Mockito.when(server.getServerName()).thenReturn(serverName);
