@@ -45,6 +45,7 @@ import org.apache.hadoop.hbase.log.HBaseMarkers;
 import org.apache.hadoop.hbase.trace.TraceUtil;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.CommonFSUtils;
+import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.wal.AbstractFSWALProvider;
@@ -122,6 +123,9 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
   // If > than this size, roll the log.
   protected long logrollsize;
 
+  // Last time to check low replication on hlog's pipeline
+  private long lastTimeCheckLowReplication = EnvironmentEdgeManager.currentTime();
+
   /**
    * WAL Comparator; it compares the timestamp (log filenum), present in the log file name. Throws
    * an IllegalArgumentException if used to compare paths from different wals.
@@ -140,7 +144,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
       final String archiveDir, final Configuration conf, final List<WALActionsListener> listeners,
       final boolean failIfWALExists, final String prefix, final String suffix)
       throws FailedLogCloseException, IOException {
-    super(conf, listeners, failIfWALExists, prefix, suffix);
+    super(conf, listeners, prefix, suffix);
     this.walDir = new Path(rootDir, logDir);
     this.walArchiveDir = new Path(rootDir, archiveDir);
     this.fs = fs;
@@ -567,6 +571,30 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
     }
   }
 
+  protected abstract W createWriterInstance(Path path)
+      throws IOException, CommonFSUtils.StreamLacksCapabilityException;
+
+  protected abstract boolean doCheckLogLowReplication();
+
+  public void checkLogLowReplication(long checkInterval) {
+    long now = EnvironmentEdgeManager.currentTime();
+    if (now - lastTimeCheckLowReplication < checkInterval) {
+      return;
+    }
+    // Will return immediately if we are in the middle of a WAL log roll currently.
+    if (!rollWriterLock.tryLock()) {
+      return;
+    }
+    try {
+      lastTimeCheckLowReplication = now;
+      if (doCheckLogLowReplication()) {
+        requestLogRoll(true);
+      }
+    } finally {
+      rollWriterLock.unlock();
+    }
+  }
+
   /**
    * This method gets the pipeline for the current WAL.
    */
@@ -586,4 +614,10 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
       }
     }
   }
+
+  /**
+   * This method gets the datanode replication count for the current WAL.
+   */
+  @VisibleForTesting
+  abstract int getLogReplication();
 }

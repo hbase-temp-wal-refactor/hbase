@@ -23,7 +23,6 @@ import static org.apache.hbase.thirdparty.com.google.common.base.Preconditions.c
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.URLEncoder;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -48,14 +47,12 @@ import org.apache.hadoop.hbase.exceptions.TimeoutIOException;
 import org.apache.hadoop.hbase.regionserver.MultiVersionConcurrencyControl;
 import org.apache.hadoop.hbase.trace.TraceUtil;
 import org.apache.hadoop.hbase.util.CollectionUtils;
-import org.apache.hadoop.hbase.util.CommonFSUtils;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALEdit;
 import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.wal.WALKeyImpl;
 import org.apache.hadoop.hbase.wal.WALProvider.WriterBase;
-import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting;
 import org.apache.htrace.core.TraceScope;
@@ -175,9 +172,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
    */
   volatile W writer;
 
-  // Last time to check low replication on hlog's pipeline
-  private long lastTimeCheckLowReplication = EnvironmentEdgeManager.currentTime();
-
   protected volatile boolean closed = false;
 
   protected final AtomicBoolean shutdown = new AtomicBoolean(false);
@@ -247,7 +241,7 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
 
   protected AbstractWAL(
       final Configuration conf, final List<WALActionsListener> listeners,
-      final boolean failIfWALExists, final String prefix, final String suffix)
+      final String prefix, final String suffix)
       throws FailedLogCloseException, IOException {
     this.conf = conf;
 
@@ -607,40 +601,10 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
   protected void doAppend(W writer, FSWALEntry entry) throws IOException {
   }
 
-  protected abstract W createWriterInstance(Path path)
-      throws IOException, CommonFSUtils.StreamLacksCapabilityException;
-
   protected void doReplaceWriter(Path oldPath, Path newPath, W nextWriter)
       throws IOException {
   }
 
   protected void doShutdown() throws IOException {
   }
-
-  protected abstract boolean doCheckLogLowReplication();
-
-  public void checkLogLowReplication(long checkInterval) {
-    long now = EnvironmentEdgeManager.currentTime();
-    if (now - lastTimeCheckLowReplication < checkInterval) {
-      return;
-    }
-    // Will return immediately if we are in the middle of a WAL log roll currently.
-    if (!rollWriterLock.tryLock()) {
-      return;
-    }
-    try {
-      lastTimeCheckLowReplication = now;
-      if (doCheckLogLowReplication()) {
-        requestLogRoll(true);
-      }
-    } finally {
-      rollWriterLock.unlock();
-    }
-  }
-
-  /**
-   * This method gets the datanode replication count for the current WAL.
-   */
-  @VisibleForTesting
-  abstract int getLogReplication();
 }
