@@ -54,6 +54,7 @@ import org.apache.hadoop.hbase.wal.WALFactory;
 import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.wal.WALPrettyPrinter;
 import org.apache.hadoop.hbase.wal.WALProvider.WriterBase;
+import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.hbase.wal.WALSplitter;
 import org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting;
@@ -258,7 +259,8 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
     rollWriterLock.lock();
     try {
       Path currentPath = getOldPath();
-      if (path.getPath().equals(currentPath)) {
+      if (path instanceof FSWalInfo &&
+          ((FSWalInfo)path).getPath().equals(currentPath)) {
         W writer = this.writer;
         return writer != null ? OptionalLong.of(writer.getLength()) : OptionalLong.empty();
       } else {
@@ -562,6 +564,26 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
     } else {
       usage();
       System.exit(-1);
+    }
+  }
+
+  /**
+   * This method gets the pipeline for the current WAL.
+   */
+  @VisibleForTesting
+  abstract DatanodeInfo[] getPipeline();
+
+  protected final void postSync(final long timeInNanos, final int handlerSyncs) {
+    if (timeInNanos > this.slowSyncNs) {
+      String msg = new StringBuilder().append("Slow sync cost: ").append(timeInNanos / 1000000)
+          .append(" ms, current pipeline: ").append(Arrays.toString(getPipeline())).toString();
+      TraceUtil.addTimelineAnnotation(msg);
+      LOG.info(msg);
+    }
+    if (!listeners.isEmpty()) {
+      for (WALActionsListener listener : listeners) {
+        listener.postSync(timeInNanos, handlerSyncs);
+      }
     }
   }
 }

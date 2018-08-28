@@ -561,20 +561,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
     return len;
   }
 
-  protected final void postSync(final long timeInNanos, final int handlerSyncs) {
-    if (timeInNanos > this.slowSyncNs) {
-      String msg = new StringBuilder().append("Slow sync cost: ").append(timeInNanos / 1000000)
-          .append(" ms, current pipeline: ").append(Arrays.toString(getPipeline())).toString();
-      TraceUtil.addTimelineAnnotation(msg);
-      LOG.info(msg);
-    }
-    if (!listeners.isEmpty()) {
-      for (WALActionsListener listener : listeners) {
-        listener.postSync(timeInNanos, handlerSyncs);
-      }
-    }
-  }
-
   protected final long stampSequenceIdAndPublishToRingBuffer(RegionInfo hri, WALKeyImpl key,
       WALEdit edits, boolean inMemstore, RingBuffer<RingBufferTruck> ringBuffer)
       throws IOException {
@@ -618,15 +604,18 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
   public abstract long append(RegionInfo info, WALKeyImpl key, WALEdit edits, boolean inMemstore)
       throws IOException;
 
-  protected abstract void doAppend(W writer, FSWALEntry entry) throws IOException;
+  protected void doAppend(W writer, FSWALEntry entry) throws IOException {
+  }
 
   protected abstract W createWriterInstance(Path path)
       throws IOException, CommonFSUtils.StreamLacksCapabilityException;
 
-  protected abstract void doReplaceWriter(Path oldPath, Path newPath, W nextWriter)
-      throws IOException;
+  protected void doReplaceWriter(Path oldPath, Path newPath, W nextWriter)
+      throws IOException {
+  }
 
-  protected abstract void doShutdown() throws IOException;
+  protected void doShutdown() throws IOException {
+  }
 
   protected abstract boolean doCheckLogLowReplication();
 
@@ -648,12 +637,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
       rollWriterLock.unlock();
     }
   }
-
-  /**
-   * This method gets the pipeline for the current WAL.
-   */
-  @VisibleForTesting
-  abstract DatanodeInfo[] getPipeline();
 
   /**
    * This method gets the datanode replication count for the current WAL.

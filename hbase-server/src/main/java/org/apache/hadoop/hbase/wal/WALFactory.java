@@ -70,8 +70,7 @@ public class WALFactory {
     defaultProvider(AsyncFSWALProvider.class),
     filesystem(FSHLogProvider.class),
     multiwal(RegionGroupingProvider.class),
-    asyncfs(AsyncFSWALProvider.class),
-    logservice(LogServiceProvider.class);
+    asyncfs(AsyncFSWALProvider.class);
 
     final Class<? extends WALProvider> clazz;
     Providers(Class<? extends WALProvider> clazz) {
