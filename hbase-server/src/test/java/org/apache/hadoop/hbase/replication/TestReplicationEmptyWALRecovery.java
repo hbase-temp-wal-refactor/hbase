@@ -20,6 +20,7 @@ package org.apache.hadoop.hbase.replication;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseClassTestRule;
 import org.apache.hadoop.hbase.Waiter;
@@ -70,7 +71,8 @@ public class TestReplicationEmptyWALRecovery extends TestReplicationBase {
           for (ReplicationSourceInterface rsi : replicationService.getReplicationManager()
               .getSources()) {
             ReplicationSource source = (ReplicationSource) rsi;
-            if (!currentFile.equals(source.getCurrentPath())) {
+            FSWalInfo wi = (FSWalInfo) source.getCurrentPath();
+            if (!currentFile.equals(wi.getPath())) {
               return false;
             }
           }
