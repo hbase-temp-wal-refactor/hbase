@@ -41,6 +41,7 @@ import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALEdit;
 import org.apache.hadoop.hbase.wal.WALInfo;
 import org.apache.hadoop.hbase.wal.WALKeyImpl;
+import org.apache.hadoop.hbase.wal.WALMetaDataProvider;
 import org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
@@ -60,8 +61,9 @@ public class ListWal implements WAL {
   private boolean closed;
   private ListWalMetaDataProvider metaDataProvider;
 
-  public ListWal(Configuration conf, String prefix, String suffix,
-      ListWalMetaDataProvider metaDataProvider, List<WALActionsListener> listeners) throws IOException {
+  public ListWal(Configuration conf, WALMetaDataProvider metaDataProvider,
+      String prefix, String suffix,
+      List<WALActionsListener> listeners) throws IOException {
     this.coprocessorHost = new WALCoprocessorHost(this, conf);
     // If prefix is null||empty then just name it wal
     this.walFilePrefix =
@@ -72,7 +74,7 @@ public class ListWal implements WAL {
           + "' but instead was '" + suffix + "'");
     }
     this.walFileSuffix = (suffix == null) ? "" : URLEncoder.encode(suffix, "UTF8");
-    this.metaDataProvider = metaDataProvider;
+    this.metaDataProvider = (ListWalMetaDataProvider)metaDataProvider;
     // Register listeners. TODO: Should this exist anymore? We have CPs?
     if (listeners != null) {
       for (WALActionsListener i : listeners) {
