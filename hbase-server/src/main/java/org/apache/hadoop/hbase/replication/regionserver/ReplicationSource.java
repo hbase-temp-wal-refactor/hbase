@@ -326,7 +326,7 @@ public class ReplicationSource implements ReplicationSourceInterface {
       int queueSize = queues.get(walGroupId).size();
       replicationDelay =
           ReplicationLoad.calculateReplicationDelay(ageOfLastShippedOp, lastTimeStamp, queueSize);
-      WALInfo currentPath = shipper.getCurrentPath();
+      WALInfo currentPath = shipper.getCurrentWALInfo();
       try {
         fileSize = currentPath.getSize();
       } catch (IOException e) {
@@ -373,7 +373,7 @@ public class ReplicationSource implements ReplicationSourceInterface {
 
   protected final void uncaughtException(Thread t, Throwable e) {
     RSRpcServices.exitIfOOME(e);
-    LOG.error("Unexpected exception in " + t.getName() + " currentPath=" + getCurrentPath(), e);
+    LOG.error("Unexpected exception in " + t.getName() + " currentPath=" + getCurrentWALInfo(), e);
     server.abort("Unexpected exception in " + t.getName(), e);
   }
 
@@ -592,11 +592,11 @@ public class ReplicationSource implements ReplicationSourceInterface {
   }
 
   @Override
-  public WALInfo getCurrentPath() {
+  public WALInfo getCurrentWALInfo() {
     // only for testing
     for (ReplicationSourceShipper worker : workerThreads.values()) {
-      if (worker.getCurrentPath() != null) {
-        return worker.getCurrentPath();
+      if (worker.getCurrentWALInfo() != null) {
+        return worker.getCurrentWALInfo();
       }
     }
     return null;
@@ -641,7 +641,7 @@ public class ReplicationSource implements ReplicationSourceInterface {
       String walGroupId = entry.getKey();
       ReplicationSourceShipper worker = entry.getValue();
       long position = worker.getCurrentPosition();
-      WALInfo currentPath = worker.getCurrentPath();
+      WALInfo currentPath = worker.getCurrentWALInfo();
       sb.append("walGroup [").append(walGroupId).append("]: ");
       if (currentPath != null) {
         sb.append("currently replicating from: ").append(currentPath).append(" at position: ")

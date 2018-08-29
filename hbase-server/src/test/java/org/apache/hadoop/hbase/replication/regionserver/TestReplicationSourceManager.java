@@ -343,7 +343,7 @@ public abstract class TestReplicationSourceManager {
     when(source.isRecovered()).thenReturn(false);
     when(source.isSyncReplication()).thenReturn(false);
     manager.logPositionAndCleanOldLogs(source,
-      new WALEntryBatch(0, manager.getSources().get(0).getCurrentPath()));
+      new WALEntryBatch(0, manager.getSources().get(0).getCurrentWALInfo()));
 
     wal.append(hri,
       new WALKeyImpl(hri.getEncodedNameAsBytes(), test, System.currentTimeMillis(), mvcc, scopes),

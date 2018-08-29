@@ -96,7 +96,7 @@ public interface ReplicationSourceInterface {
    * Get the current log that's replicated
    * @return the current log
    */
-  WALInfo getCurrentPath();
+  WALInfo getCurrentWALInfo();
 
   /**
    * Get the queue id that the source is replicating to

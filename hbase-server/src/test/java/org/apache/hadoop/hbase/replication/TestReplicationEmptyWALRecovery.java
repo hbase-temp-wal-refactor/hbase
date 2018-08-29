@@ -71,7 +71,7 @@ public class TestReplicationEmptyWALRecovery extends TestReplicationBase {
           for (ReplicationSourceInterface rsi : replicationService.getReplicationManager()
               .getSources()) {
             ReplicationSource source = (ReplicationSource) rsi;
-            FSWALInfo wi = (FSWALInfo) source.getCurrentPath();
+            FSWALInfo wi = (FSWALInfo) source.getCurrentWALInfo();
             if (!currentFile.equals(wi.getPath())) {
               return false;
             }

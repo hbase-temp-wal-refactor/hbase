@@ -43,7 +43,7 @@ public class ReplicationSourceDummy implements ReplicationSourceInterface {
   private ReplicationSourceManager manager;
   private ReplicationPeer replicationPeer;
   private String peerClusterId;
-  private WALInfo currentPath;
+  private WALInfo currentWALInfo;
   private MetricsSource metrics;
   private WALFileLengthProvider walFileLengthProvider;
   private AtomicBoolean startup = new AtomicBoolean(false);
@@ -62,13 +62,13 @@ public class ReplicationSourceDummy implements ReplicationSourceInterface {
 
   @Override
   public void enqueueLog(WALInfo log) {
-    this.currentPath = log;
+    this.currentWALInfo = log;
     metrics.incrSizeOfLogQueue();
   }
 
   @Override
-  public WALInfo getCurrentPath() {
-    return this.currentPath;
+  public WALInfo getCurrentWALInfo() {
+    return this.currentWALInfo;
   }
 
   @Override

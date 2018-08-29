@@ -293,7 +293,7 @@ public class ReplicationSourceShipper extends Thread {
       name + ".replicationSource.shipper" + walGroupId + "," + source.getQueueId(), handler);
   }
 
-  WALInfo getCurrentPath() {
+  WALInfo getCurrentWALInfo() {
     return entryReader.getCurrentPath();
   }
 
