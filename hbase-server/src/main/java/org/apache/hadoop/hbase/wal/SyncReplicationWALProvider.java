@@ -37,7 +37,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.ServerName;
@@ -376,7 +375,7 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
   }
 
   @Override
-  public WALMetaDataProvider getWalMetaDataTracker() throws IOException {
+  public WALMetaDataProvider getWalMetaDataProvider() throws IOException {
     return new FSWALMetaDataProvider(CommonFSUtils.getWALFileSystem(conf));
   }
 

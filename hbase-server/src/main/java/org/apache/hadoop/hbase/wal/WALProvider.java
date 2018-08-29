@@ -135,11 +135,10 @@ public interface WALProvider {
       MetricsSource metrics) throws IOException;
 
   /**
-   * MetaData provider for the given WAL implementation 
-   * @return
+   * @return MetaData provider for the given WAL implementation
    * @throws IOException
    */
-  WALMetaDataProvider getWalMetaDataTracker() throws IOException;
+  WALMetaDataProvider getWalMetaDataProvider() throws IOException;
 
   /**
    * Creates WalInfo for Wal path/name

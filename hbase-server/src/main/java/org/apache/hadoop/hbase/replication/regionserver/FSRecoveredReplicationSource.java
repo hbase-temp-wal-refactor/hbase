@@ -59,7 +59,7 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource{
     PriorityBlockingQueue<WALInfo> newPaths =
         new PriorityBlockingQueue<WALInfo>(queueSizePerGroup, new LogsComparator());
     pathsLoop: for (WALInfo path : queue) {
-      if (walProvider.getWalMetaDataTracker().exists(((FSWALInfo)path).getPath().toString())) { // still in same location, don't need to do anything
+      if (walProvider.getWalMetaDataProvider().exists(((FSWALInfo)path).getPath().toString())) { // still in same location, don't need to do anything
         newPaths.add(path);
         continue;
       }
@@ -85,7 +85,7 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource{
               deadRsDirectory.suffix(AbstractFSWALProvider.SPLITTING_EXT), path.getName()) };
           for (Path possibleLogLocation : locs) {
             LOG.info("Possible location " + possibleLogLocation.toUri().toString());
-            if (walProvider.getWalMetaDataTracker().exists(possibleLogLocation.toString())) {
+            if (walProvider.getWalMetaDataProvider().exists(possibleLogLocation.toString())) {
               // We found the right new location
               LOG.info("Log " + path + " still exists at " + possibleLogLocation);
               newPaths.add(new FSWALInfo(possibleLogLocation));
@@ -118,9 +118,9 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource{
   // N.B. the ReplicationSyncUp tool sets the manager.getWALDir to the root of the wal
   // area rather than to the wal area for a particular region server.
   private WALInfo getReplSyncUpPath(WALInfo path) throws IOException {
-    WALInfo[] rss = walProvider.getWalMetaDataTracker().list(this.walProvider.createWalInfo(logDir));
+    WALInfo[] rss = walProvider.getWalMetaDataProvider().list(this.walProvider.createWalInfo(logDir));
     for (WALInfo rs : rss) {
-      WALInfo[] logs = walProvider.getWalMetaDataTracker().list(rs);
+      WALInfo[] logs = walProvider.getWalMetaDataProvider().list(rs);
       for (WALInfo log : logs) {
         WALInfo p = this.walProvider.createWalInfo(new Path(((FSWALInfo)rs).getPath(), log.getName()).toString());
         if (p.getName().equals(path.getName())) {

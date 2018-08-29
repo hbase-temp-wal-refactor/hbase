@@ -31,7 +31,6 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.ServerName;
@@ -316,7 +315,7 @@ public class RegionGroupingProvider implements WALProvider {
   }
 
   @Override
-  public WALMetaDataProvider getWalMetaDataTracker() throws IOException {
+  public WALMetaDataProvider getWalMetaDataProvider() throws IOException {
     return new FSWALMetaDataProvider(CommonFSUtils.getWALFileSystem(conf));
   }
 

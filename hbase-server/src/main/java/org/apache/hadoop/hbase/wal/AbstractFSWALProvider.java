@@ -564,7 +564,7 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
   }
   
   @Override
-  public WALMetaDataProvider getWalMetaDataTracker() throws IOException {
+  public WALMetaDataProvider getWalMetaDataProvider() throws IOException {
     return new FSWALMetaDataProvider(CommonFSUtils.getWALFileSystem(conf));
   }
   
