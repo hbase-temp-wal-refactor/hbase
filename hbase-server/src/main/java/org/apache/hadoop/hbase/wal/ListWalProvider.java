@@ -103,9 +103,9 @@ public class ListWalProvider implements WALProvider {
   }
 
   private ListWal createWAL() throws IOException {
-    return new ListWal(conf, listWalMetaDataProvider, logPrefix,
+    return new ListWal(conf, logPrefix,
         META_WAL_PROVIDER_ID.equals(providerId) ? META_WAL_PROVIDER_ID : null,
-        listeners);
+        listWalMetaDataProvider, listeners);
   }
 
   @Override

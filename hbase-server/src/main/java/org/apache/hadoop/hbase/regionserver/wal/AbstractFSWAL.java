@@ -53,7 +53,6 @@ import org.apache.hadoop.hbase.wal.FSWALInfo;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALFactory;
 import org.apache.hadoop.hbase.wal.WALInfo;
-import org.apache.hadoop.hbase.wal.WALMetaDataProvider;
 import org.apache.hadoop.hbase.wal.WALPrettyPrinter;
 import org.apache.hadoop.hbase.wal.WALProvider.WriterBase;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
@@ -141,8 +140,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> extends AbstractWAL<W>
   protected ConcurrentNavigableMap<Path, WalProps> walFile2Props =
     new ConcurrentSkipListMap<>(LOG_NAME_COMPARATOR);
 
-  protected AbstractFSWAL(final WALMetaDataProvider metaDataProvider, final FileSystem fs,
-      final Path rootDir, final String logDir,
+  protected AbstractFSWAL(final FileSystem fs, final Path rootDir, final String logDir,
       final String archiveDir, final Configuration conf, final List<WALActionsListener> listeners,
       final boolean failIfWALExists, final String prefix, final String suffix)
       throws FailedLogCloseException, IOException {
