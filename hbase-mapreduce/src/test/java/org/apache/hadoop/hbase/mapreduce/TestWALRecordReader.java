@@ -141,7 +141,7 @@ public class TestWALRecordReader {
     log.append(info, getWalKeyImpl(ts+1, scopes), edit, true);
     log.sync();
     LOG.info("Before 1st WAL roll " + log.toString());
-    log.rollWriter();
+    log.rollWriter(false);
     LOG.info("Past 1st WAL roll " + log.toString());
 
     Thread.sleep(1);
@@ -198,7 +198,7 @@ public class TestWALRecordReader {
 
     Thread.sleep(1); // make sure 2nd log gets a later timestamp
     long secondTs = System.currentTimeMillis();
-    log.rollWriter();
+    log.rollWriter(false);
 
     edit = new WALEdit();
     edit.add(new KeyValue(rowName, family, Bytes.toBytes("2"),

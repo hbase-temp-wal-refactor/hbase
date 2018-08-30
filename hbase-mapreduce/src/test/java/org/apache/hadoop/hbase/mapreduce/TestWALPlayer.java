@@ -133,7 +133,7 @@ public class TestWALPlayer {
 
     // replay the WAL, map table 1 to table 2
     WAL log = cluster.getRegionServer(0).getWAL(null);
-    log.rollWriter();
+    log.rollWriter(false);
     String walInputDir = new Path(cluster.getMaster().getMasterFileSystem()
         .getWALRootDir(), HConstants.HREGION_LOGDIR_NAME).toString();
 
