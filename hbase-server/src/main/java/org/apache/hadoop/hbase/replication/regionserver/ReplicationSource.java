@@ -348,17 +348,6 @@ public class ReplicationSource implements ReplicationSourceInterface {
     return sourceReplicationStatus;
   }
 
-//  private long getFileSize(Path currentPath) throws IOException {
-//    long fileSize;
-//    try {
-//      fileSize = fs.getContentSummary(currentPath).getLength();
-//    } catch (FileNotFoundException e) {
-//      currentPath = getArchivedLogPath(currentPath, conf);
-//      fileSize = fs.getContentSummary(currentPath).getLength();
-//    }
-//    return fileSize;
-//  }
-
   protected ReplicationSourceShipper createNewShipper(String walGroupId,
       PriorityBlockingQueue<WALInfo> queue) {
     return new ReplicationSourceShipper(conf, walGroupId, queue, this);

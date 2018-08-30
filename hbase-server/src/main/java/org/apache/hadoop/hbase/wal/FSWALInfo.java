@@ -97,4 +97,8 @@ public class FSWALInfo implements WALInfo{
     FSWALInfo that = (FSWALInfo) obj;
     return this.path.equals(that.getPath());
   }
+  @Override
+  public int hashCode() {
+    return this.path.hashCode();
+  }
 }
