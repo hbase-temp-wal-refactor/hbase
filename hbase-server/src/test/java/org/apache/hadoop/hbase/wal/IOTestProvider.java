@@ -324,15 +324,4 @@ public class IOTestProvider implements WALProvider {
   public RecoveredReplicationSource getRecoveredReplicationSource() {
     return new FSRecoveredReplicationSource();
   }
-  
-  @Override
-  public WALInfo getWalFromArchivePath(String wal) {
-    return new FSWALInfo(new Path(oldLogDir, wal));
-  }
-
-  @Override
-  public WALInfo getFullPath(ServerName serverName, String wal) {
-    Path walWithServerName = new Path(getWALDirectoryName(serverName.toString()), wal);
-    return new FSWALInfo(new Path(walRootDir, walWithServerName));
-  }
 }

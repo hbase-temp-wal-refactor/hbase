@@ -152,19 +152,4 @@ public interface WALProvider {
    * @return
    */
   RecoveredReplicationSource getRecoveredReplicationSource();
-
-  /**
-   * Archival path or name for the given wal
-   * @param wal
-   * @return
-   */
-  WALInfo getWalFromArchivePath(String wal);
-
-  /**
-   * Original path or name for the given wal
-   * @param serverName
-   * @param wal
-   * @return
-   */
-  WALInfo getFullPath(ServerName serverName, String wal);
 }

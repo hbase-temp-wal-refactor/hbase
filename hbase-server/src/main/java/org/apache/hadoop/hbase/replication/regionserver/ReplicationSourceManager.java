@@ -486,7 +486,7 @@ public class ReplicationSourceManager implements ReplicationListener {
       }
       for (NavigableSet<String> walsByGroup : walsById.get(peerId).values()) {
         walsByGroup.forEach(wal -> src
-            .enqueueLog(this.walProvider.getFullPath(serverName, wal)));
+            .enqueueLog(((SyncReplicationWALProvider)this.walProvider).getFullPath(serverName, wal)));
       }
     }
     LOG.info("Startup replication source for " + src.getPeerId());
@@ -966,7 +966,8 @@ public class ReplicationSourceManager implements ReplicationListener {
             }
             oldsources.add(src);
             for (String wal : walsSet) {
-              WALInfo archivedWal = walProvider.getWalFromArchivePath(wal);
+              WALInfo archivedWal = ((SyncReplicationWALProvider)walProvider)
+                  .getWalFromArchivePath(wal);
               if (archivedWal != null) {
                 src.enqueueLog(archivedWal);
               }
