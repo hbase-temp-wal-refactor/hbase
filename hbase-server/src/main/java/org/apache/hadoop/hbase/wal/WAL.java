@@ -60,19 +60,6 @@ public interface WAL extends Closeable, WALFileLengthProvider {
    * The implementation is synchronized in order to make sure there's one rollWriter
    * running at any given time.
    *
-   * @return If lots of logs, flush the returned regions so next time through we
-   *         can clean logs. Returns null if nothing to flush. Names are actual
-   *         region names as returned by {@link RegionInfo#getEncodedName()}
-   */
-  byte[][] rollWriter() throws FailedLogCloseException, IOException;
-
-  /**
-   * Roll the log writer. That is, start writing log messages to a new file.
-   *
-   * <p>
-   * The implementation is synchronized in order to make sure there's one rollWriter
-   * running at any given time.
-   *
    * @param force
    *          If true, force creation of a new writer even if no entries have
    *          been written to the current writer

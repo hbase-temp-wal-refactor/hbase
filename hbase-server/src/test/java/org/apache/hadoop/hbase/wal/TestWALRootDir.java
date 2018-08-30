@@ -103,7 +103,7 @@ public class TestWALRootDir {
     log.sync(txid);
     assertEquals("Expect 1 log have been created", 1,
         getWALFiles(walFs, walRootDir).size());
-    log.rollWriter();
+    log.rollWriter(false);
     //Create 1 more WAL
     assertEquals(2, getWALFiles(walFs, new Path(walRootDir,
         HConstants.HREGION_LOGDIR_NAME)).size());
@@ -112,7 +112,7 @@ public class TestWALRootDir {
     txid = log.append(regionInfo, getWalKey(System.currentTimeMillis(), regionInfo, 1),
         edit, true);
     log.sync(txid);
-    log.rollWriter();
+    log.rollWriter(false);
     log.shutdown();
 
     assertEquals("Expect 3 logs in WALs dir", 3, getWALFiles(walFs,

@@ -210,12 +210,12 @@ public class TestFSHLogProvider {
       // Add a single edit and make sure that rolling won't remove the file
       // Before HBASE-3198 it used to delete it
       addEdits(log, hri, htd, 1, scopes1);
-      log.rollWriter();
+      log.rollWriter(false);
       assertEquals(1, AbstractFSWALProvider.getNumRolledLogFiles(log));
 
       // See if there's anything wrong with more than 1 edit
       addEdits(log, hri, htd, 2, scopes1);
-      log.rollWriter();
+      log.rollWriter(false);
       assertEquals(2, FSHLogProvider.getNumRolledLogFiles(log));
 
       // Now mix edits from 2 regions, still no flushing
@@ -223,7 +223,7 @@ public class TestFSHLogProvider {
       addEdits(log, hri2, htd2, 1, scopes2);
       addEdits(log, hri, htd, 1, scopes1);
       addEdits(log, hri2, htd2, 1, scopes2);
-      log.rollWriter();
+      log.rollWriter(false);
       assertEquals(3, AbstractFSWALProvider.getNumRolledLogFiles(log));
 
       // Flush the first region, we expect to see the first two files getting
@@ -231,7 +231,7 @@ public class TestFSHLogProvider {
       addEdits(log, hri2, htd2, 1, scopes2);
       log.startCacheFlush(hri.getEncodedNameAsBytes(), htd.getColumnFamilyNames());
       log.completeCacheFlush(hri.getEncodedNameAsBytes());
-      log.rollWriter();
+      log.rollWriter(false);
       int count = AbstractFSWALProvider.getNumRolledLogFiles(log);
       assertEquals(2, count);
 
@@ -241,7 +241,7 @@ public class TestFSHLogProvider {
       addEdits(log, hri2, htd2, 1, scopes2);
       log.startCacheFlush(hri2.getEncodedNameAsBytes(), htd2.getColumnFamilyNames());
       log.completeCacheFlush(hri2.getEncodedNameAsBytes());
-      log.rollWriter();
+      log.rollWriter(false);
       assertEquals(0, AbstractFSWALProvider.getNumRolledLogFiles(log));
     } finally {
       if (wals != null) {
@@ -290,27 +290,27 @@ public class TestFSHLogProvider {
       // variables to mock region sequenceIds.
       // start with the testing logic: insert a waledit, and roll writer
       addEdits(wal, hri1, table1, 1, scopes1);
-      wal.rollWriter();
+      wal.rollWriter(false);
       // assert that the wal is rolled
       assertEquals(1, AbstractFSWALProvider.getNumRolledLogFiles(wal));
       // add edits in the second wal file, and roll writer.
       addEdits(wal, hri1, table1, 1, scopes1);
-      wal.rollWriter();
+      wal.rollWriter(false);
       // assert that the wal is rolled
       assertEquals(2, AbstractFSWALProvider.getNumRolledLogFiles(wal));
       // add a waledit to table1, and flush the region.
       addEdits(wal, hri1, table1, 3, scopes1);
       flushRegion(wal, hri1.getEncodedNameAsBytes(), table1.getColumnFamilyNames());
       // roll log; all old logs should be archived.
-      wal.rollWriter();
+      wal.rollWriter(false);
       assertEquals(0, AbstractFSWALProvider.getNumRolledLogFiles(wal));
       // add an edit to table2, and roll writer
       addEdits(wal, hri2, table2, 1, scopes2);
-      wal.rollWriter();
+      wal.rollWriter(false);
       assertEquals(1, AbstractFSWALProvider.getNumRolledLogFiles(wal));
       // add edits for table1, and roll writer
       addEdits(wal, hri1, table1, 2, scopes1);
-      wal.rollWriter();
+      wal.rollWriter(false);
       assertEquals(2, AbstractFSWALProvider.getNumRolledLogFiles(wal));
       // add edits for table2, and flush hri1.
       addEdits(wal, hri2, table2, 2, scopes2);
@@ -320,12 +320,12 @@ public class TestFSHLogProvider {
       // log2: region1 (flushed)
       // log3: region2 (unflushed)
       // roll the writer; log2 should be archived.
-      wal.rollWriter();
+      wal.rollWriter(false);
       assertEquals(2, AbstractFSWALProvider.getNumRolledLogFiles(wal));
       // flush region2, and all logs should be archived.
       addEdits(wal, hri2, table2, 2, scopes2);
       flushRegion(wal, hri2.getEncodedNameAsBytes(), table2.getColumnFamilyNames());
-      wal.rollWriter();
+      wal.rollWriter(false);
       assertEquals(0, AbstractFSWALProvider.getNumRolledLogFiles(wal));
     } finally {
       if (wals != null) {

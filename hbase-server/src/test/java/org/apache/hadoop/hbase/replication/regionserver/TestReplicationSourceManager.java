@@ -304,7 +304,7 @@ public abstract class TestReplicationSourceManager {
     // Testing normal log rolling every 20
     for(long i = 1; i < 101; i++) {
       if(i > 1 && i % 20 == 0) {
-        wal.rollWriter();
+        wal.rollWriter(false);
       }
       LOG.info(Long.toString(i));
       final long txid = wal.append(
@@ -336,7 +336,7 @@ public abstract class TestReplicationSourceManager {
     }
     assertEquals(6, logNumber);
 
-    wal.rollWriter();
+    wal.rollWriter(false);
 
     ReplicationSourceInterface source = mock(ReplicationSourceInterface.class);
     when(source.getQueueId()).thenReturn("1");

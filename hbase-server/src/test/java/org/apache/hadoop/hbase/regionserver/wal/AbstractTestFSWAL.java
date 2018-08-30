@@ -236,7 +236,7 @@ public abstract class AbstractTestFSWAL {
   }
 
   /**
-   * On rolling a wal after reaching the threshold, {@link WAL#rollWriter()} returns the list of
+   * On rolling a wal after reaching the threshold, {@link WAL#rollWriter(false)} returns the list of
    * regions which should be flushed in order to archive the oldest wal file.
    * <p>
    * This method tests this behavior by inserting edits and rolling the wal enough times to reach
@@ -269,10 +269,10 @@ public abstract class AbstractTestFSWAL {
     }
     try {
       addEdits(wal, hri1, t1, 2, mvcc, scopes1);
-      wal.rollWriter();
+      wal.rollWriter(false);
       // add some more edits and roll the wal. This would reach the log number threshold
       addEdits(wal, hri1, t1, 2, mvcc, scopes1);
-      wal.rollWriter();
+      wal.rollWriter(false);
       // with above rollWriter call, the max logs limit is reached.
       assertTrue(wal.getNumRolledLogFiles() == 2);
 
@@ -290,7 +290,7 @@ public abstract class AbstractTestFSWAL {
       // flush region 1, and roll the wal file. Only last wal which has entries for region1 should
       // remain.
       flushRegion(wal, hri1.getEncodedNameAsBytes(), t1.getColumnFamilyNames());
-      wal.rollWriter();
+      wal.rollWriter(false);
       // only one wal should remain now (that is for the second region).
       assertEquals(1, wal.getNumRolledLogFiles());
       // flush the second region
@@ -301,11 +301,11 @@ public abstract class AbstractTestFSWAL {
       // add edits both to region 1 and region 2, and roll.
       addEdits(wal, hri1, t1, 2, mvcc, scopes1);
       addEdits(wal, hri2, t2, 2, mvcc, scopes2);
-      wal.rollWriter();
+      wal.rollWriter(false);
       // add edits and roll the writer, to reach the max logs limit.
       assertEquals(1, wal.getNumRolledLogFiles());
       addEdits(wal, hri1, t1, 2, mvcc, scopes1);
-      wal.rollWriter();
+      wal.rollWriter(false);
       // it should return two regions to flush, as the oldest wal file has entries
       // for both regions.
       regionsToFlush = wal.findRegionsToForceFlush();
@@ -319,7 +319,7 @@ public abstract class AbstractTestFSWAL {
       addEdits(wal, hri1, t1, 2, mvcc, scopes1);
       // tests partial flush: roll on a partial flush, and ensure that wal is not archived.
       wal.startCacheFlush(hri1.getEncodedNameAsBytes(), t1.getColumnFamilyNames());
-      wal.rollWriter();
+      wal.rollWriter(false);
       wal.completeCacheFlush(hri1.getEncodedNameAsBytes());
       assertEquals(1, wal.getNumRolledLogFiles());
     } finally {
@@ -480,6 +480,6 @@ public abstract class AbstractTestFSWAL {
     AbstractFSWAL<?> wal = newWAL(FS, CommonFSUtils.getWALRootDir(CONF), DIR.toString(), testName,
       CONF, null, true, null, null);
     wal.close();
-    wal.rollWriter();
+    wal.rollWriter(false);
   }
 }

@@ -155,7 +155,7 @@ public class TestLogRollingNoCluster {
           long now = System.currentTimeMillis();
           // Roll every ten edits
           if (i % 10 == 0) {
-            this.wal.rollWriter();
+            this.wal.rollWriter(false);
           }
           WALEdit edit = new WALEdit();
           byte[] bytes = Bytes.toBytes(i);

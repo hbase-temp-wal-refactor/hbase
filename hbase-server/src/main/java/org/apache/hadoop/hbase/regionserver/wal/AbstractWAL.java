@@ -279,7 +279,7 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
    * Used to initialize the WAL. Usually just call rollWriter to create the first log writer.
    */
   public void init() throws IOException {
-    rollWriter();
+    rollWriter(false);
   }
 
   @Override
@@ -334,11 +334,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
     // we crash during the flush. For figuring what to flush, we might get requeued if our sequence
     // id is old even though we are currently flushing. This may mean we do too much flushing.
     return this.sequenceIdAccounting.getLowestSequenceId(encodedRegionName, familyName);
-  }
-
-  @Override
-  public byte[][] rollWriter() throws FailedLogCloseException, IOException {
-    return rollWriter(false);
   }
 
   /**

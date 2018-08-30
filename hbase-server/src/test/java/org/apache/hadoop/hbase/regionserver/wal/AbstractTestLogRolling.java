@@ -200,7 +200,7 @@ public abstract class AbstractTestLogRolling  {
     }
 
     // Now roll the log
-    log.rollWriter();
+    log.rollWriter(false);
 
     int count = AbstractFSWALProvider.getNumRolledLogFiles(log);
     LOG.info("after flushing all regions and rolling logs there are " + count + " log files");
@@ -266,7 +266,7 @@ public abstract class AbstractTestLogRolling  {
       assertEquals(2, s.getStorefilesCount());
 
       // Roll the log and compact table, to have compaction record in the 2nd WAL.
-      log.rollWriter();
+      log.rollWriter(false);
       assertEquals("Should have WAL; one table is not flushed", 1,
         AbstractFSWALProvider.getNumRolledLogFiles(log));
       admin.flush(table.getName());
@@ -280,14 +280,14 @@ public abstract class AbstractTestLogRolling  {
 
       // Write some value to the table so the WAL cannot be deleted until table is flushed.
       doPut(table, 0); // Now 2nd WAL will have both compaction and put record for table.
-      log.rollWriter(); // 1st WAL deleted, 2nd not deleted yet.
+      log.rollWriter(false); // 1st WAL deleted, 2nd not deleted yet.
       assertEquals("Should have WAL; one table is not flushed", 1,
         AbstractFSWALProvider.getNumRolledLogFiles(log));
 
       // Flush table to make latest WAL obsolete; write another record, and roll again.
       admin.flush(table.getName());
       doPut(table, 1);
-      log.rollWriter(); // Now 2nd WAL is deleted and 3rd is added.
+      log.rollWriter(false); // Now 2nd WAL is deleted and 3rd is added.
       assertEquals("Should have 1 WALs at the end", 1,
         AbstractFSWALProvider.getNumRolledLogFiles(log));
     } finally {

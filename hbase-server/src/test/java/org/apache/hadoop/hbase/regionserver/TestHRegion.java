@@ -6457,7 +6457,7 @@ public class TestHRegion {
       }
 
       for (int i = 0; i < testCount; i++) {
-        region.getWAL().rollWriter();
+        region.getWAL().rollWriter(false);
         Thread.yield();
       }
     } finally {

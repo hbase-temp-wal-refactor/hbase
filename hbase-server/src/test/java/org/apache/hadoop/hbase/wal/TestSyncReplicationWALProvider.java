@@ -124,7 +124,7 @@ public class TestSyncReplicationWALProvider {
       ProtobufLogTestHelper.doRead(reader, false, REGION, TABLE, columnCount, recordCount, row,
         timestamp);
     }
-    wal.rollWriter();
+    wal.rollWriter(false);
     DistributedFileSystem dfs = (DistributedFileSystem) UTIL.getDFSCluster().getFileSystem();
     UTIL.waitFor(5000, new ExplainingPredicate<Exception>() {
 

@@ -223,7 +223,7 @@ public class TestWALMonotonicallyIncreasingSeqId {
     incThread.join();
 
     Path logPath = ((AbstractFSWAL<?>) region.getWAL()).getCurrentFileName();
-    region.getWAL().rollWriter();
+    region.getWAL().rollWriter(false);
     Thread.sleep(10);
     Path hbaseDir = new Path(walConf.get(HConstants.HBASE_DIR));
     Path oldWalsDir = new Path(hbaseDir, HConstants.HREGION_OLDLOGDIR_NAME);

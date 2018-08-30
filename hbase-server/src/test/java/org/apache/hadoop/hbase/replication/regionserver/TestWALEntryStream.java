@@ -157,7 +157,7 @@ public class TestWALEntryStream {
             appendToLogAndSync(walEditKVs);
           }
 
-          log.rollWriter();
+          log.rollWriter(false);
 
           try (WALEntryStream entryStream =
               new FSWALEntryStream(fs, walQueue, CONF, 0, log, null, new MetricsSource("1"))) {
@@ -212,7 +212,7 @@ public class TestWALEntryStream {
 
     // We rolled but we still should see the end of the first log and get that item
     appendToLogAndSync();
-    log.rollWriter();
+    log.rollWriter(false);
     appendToLogAndSync();
 
     try (WALEntryStream entryStream = new FSWALEntryStream(fs, walQueue, CONF, oldPos,
@@ -245,7 +245,7 @@ public class TestWALEntryStream {
       assertEquals("1", getRow(entryStream.next()));
 
       appendToLog("3"); // 3 - comes in after reader opened
-      log.rollWriter(); // log roll happening while we're reading
+      log.rollWriter(false); // log roll happening while we're reading
       appendToLog("4"); // 4 - this append is in the rolled log
 
       assertEquals("2", getRow(entryStream.next()));
@@ -395,7 +395,7 @@ public class TestWALEntryStream {
   public void testReplicationSourceWALReaderRecovered() throws Exception {
     appendEntriesToLogAndSync(10);
     WALInfo walPath = walQueue.peek();
-    log.rollWriter();
+    log.rollWriter(false);
     appendEntriesToLogAndSync(5);
     log.shutdown();
 
@@ -428,7 +428,7 @@ public class TestWALEntryStream {
   public void testReplicationSourceWALReaderWrongPosition() throws Exception {
     appendEntriesToLogAndSync(1);
     WALInfo walPath = walQueue.peek();
-    log.rollWriter();
+    log.rollWriter(false);
     appendEntriesToLogAndSync(20);
     TEST_UTIL.waitFor(5000, new ExplainingPredicate<Exception>() {
 
@@ -460,7 +460,7 @@ public class TestWALEntryStream {
     assertEquals(20, entryBatch.getNbEntries());
     assertFalse(entryBatch.isEndOfFile());
 
-    log.rollWriter();
+    log.rollWriter(false);
     appendEntriesToLogAndSync(10);
     entryBatch = reader.take();
     assertEquals(walPath2, entryBatch.getLastWalPath());

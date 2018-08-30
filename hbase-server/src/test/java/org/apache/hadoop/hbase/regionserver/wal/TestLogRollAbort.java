@@ -229,7 +229,7 @@ public class TestLogRollAbort {
 
       LOG.debug("Trying to roll the WAL.");
       try {
-        log.rollWriter();
+        log.rollWriter(false);
         Assert.fail("rollWriter() did not throw any exception.");
       } catch (IOException ioe) {
         if (ioe.getCause() instanceof FileNotFoundException) {

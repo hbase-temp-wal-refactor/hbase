@@ -120,7 +120,7 @@ public class TestWALActionsListener {
         wal.registerWALActionsListener(laterobserver);
       }
       if (i % 2 == 0) {
-        wal.rollWriter();
+        wal.rollWriter(false);
       }
     }
 

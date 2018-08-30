@@ -490,7 +490,7 @@ public class TestPerColumnFamilyFlush {
         }
         // Roll the WAL. The log file count is less than maxLogs so no flush is triggered.
         int currentNumRolledLogFiles = getNumRolledLogFiles(desiredRegion);
-        assertNull(getWAL(desiredRegion).rollWriter());
+        assertNull(getWAL(desiredRegion).rollWriter(false));
         while (getNumRolledLogFiles(desiredRegion) <= currentNumRolledLogFiles) {
           Thread.sleep(100);
         }
