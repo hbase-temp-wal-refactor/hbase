@@ -82,5 +82,6 @@ public abstract class RecoveredReplicationSource extends ReplicationSource {
    * @param queue Updated queue with the new WalInfo(paths or stream) if wals are archived 
    * @throws IOException
    */
-  public abstract void locateRecoveredPaths(PriorityBlockingQueue<WALInfo> queue) throws IOException;
+  public abstract void locateRecoveredWALInfos(PriorityBlockingQueue<WALInfo> queue)
+      throws IOException;
 }

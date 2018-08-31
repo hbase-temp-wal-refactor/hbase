@@ -58,7 +58,7 @@ public class RecoveredReplicationSourceShipper extends ReplicationSourceShipper 
     int numRetries = 0;
     while (numRetries <= maxRetriesMultiplier) {
       try {
-        source.locateRecoveredPaths(queue);
+        source.locateRecoveredWALInfos(queue);
         break;
       } catch (IOException e) {
         LOG.error("Error while locating recovered queue paths, attempt #" + numRetries);

@@ -38,7 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @InterfaceAudience.Private
-public class FSRecoveredReplicationSource extends RecoveredReplicationSource{
+public class FSRecoveredReplicationSource extends RecoveredReplicationSource {
   
   private static final Logger LOG = LoggerFactory.getLogger(FSRecoveredReplicationSource.class);
   private String logDir;
@@ -54,22 +54,23 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource{
   }
   
   @Override
-  public void locateRecoveredPaths(PriorityBlockingQueue<WALInfo> queue) throws IOException {
-    boolean hasPathChanged = false;
-    PriorityBlockingQueue<WALInfo> newPaths =
+  public void locateRecoveredWALInfos(PriorityBlockingQueue<WALInfo> queue) throws IOException {
+    boolean hasWALInfoChanged = false;
+    PriorityBlockingQueue<WALInfo> newWALInfos =
         new PriorityBlockingQueue<WALInfo>(queueSizePerGroup, new LogsComparator());
-    pathsLoop: for (WALInfo path : queue) {
-      if (walProvider.getWalMetaDataProvider().exists(((FSWALInfo)path).getPath().toString())) { // still in same location, don't need to do anything
-        newPaths.add(path);
+    walinfoLoop:
+    for (WALInfo walinfo : queue) {
+      if (walProvider.getWalMetaDataProvider().exists(((FSWALInfo)walinfo).getPath().toString())) { // still in same location, don't need to do anything
+        newWALInfos.add(walinfo);
         continue;
       }
-      // Path changed - try to find the right path.
-      hasPathChanged = true;
+      // WALInfo changed - try to find the right WALInfo.
+      hasWALInfoChanged = true;
       if (server instanceof ReplicationSyncUp.DummyServer) {
         // In the case of disaster/recovery, HMaster may be shutdown/crashed before flush data
         // from .logs to .oldlogs. Loop into .logs folders and check whether a match exists
-        WALInfo newPath = getReplSyncUpPath(path);
-        newPaths.add(newPath);
+        WALInfo newWALInfo = getReplSyncUpPath(walinfo);
+        newWALInfos.add(newWALInfo);
         continue;
       } else {
         // See if Path exists in the dead RS folder (there could be a chain of failures
@@ -81,27 +82,27 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource{
           final Path deadRsDirectory =
               new Path(walDir, AbstractFSWALProvider.getWALDirectoryName(curDeadServerName
                   .getServerName()));
-          Path[] locs = new Path[] { new Path(deadRsDirectory, path.getName()), new Path(
-              deadRsDirectory.suffix(AbstractFSWALProvider.SPLITTING_EXT), path.getName()) };
+          Path[] locs = new Path[] { new Path(deadRsDirectory, walinfo.getName()), new Path(
+              deadRsDirectory.suffix(AbstractFSWALProvider.SPLITTING_EXT), walinfo.getName()) };
           for (Path possibleLogLocation : locs) {
             LOG.info("Possible location " + possibleLogLocation.toUri().toString());
             if (walProvider.getWalMetaDataProvider().exists(possibleLogLocation.toString())) {
               // We found the right new location
-              LOG.info("Log " + path + " still exists at " + possibleLogLocation);
-              newPaths.add(new FSWALInfo(possibleLogLocation));
-              continue pathsLoop;
+              LOG.info("Log " + walinfo + " still exists at " + possibleLogLocation);
+              newWALInfos.add(new FSWALInfo(possibleLogLocation));
+              continue walinfoLoop;
             }
           }
         }
         // didn't find a new location
         LOG.error(
-          String.format("WAL Path %s doesn't exist and couldn't find its new location", path));
-        newPaths.add(path);
+          String.format("WAL Path %s doesn't exist and couldn't find its new location", walinfo));
+        newWALInfos.add(walinfo);
       }
     }
 
-    if (hasPathChanged) {
-      if (newPaths.size() != queue.size()) { // this shouldn't happen
+    if (hasWALInfoChanged) {
+      if (newWALInfos.size() != queue.size()) { // this shouldn't happen
         LOG.error("Recovery queue size is incorrect");
         throw new IOException("Recovery queue size error");
       }
@@ -109,8 +110,8 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource{
       // since this is a recovered queue with no new incoming logs,
       // there shouldn't be any concurrency issues
       queue.clear();
-      for (WALInfo path : newPaths) {
-        queue.add(path);
+      for (WALInfo walinfo : newWALInfos) {
+        queue.add(walinfo);
       }
     }
   }
