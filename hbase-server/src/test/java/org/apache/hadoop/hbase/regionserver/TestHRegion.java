@@ -151,6 +151,7 @@ import org.apache.hadoop.hbase.util.IncrementingEnvironmentEdge;
 import org.apache.hadoop.hbase.util.ManualEnvironmentEdge;
 import org.apache.hadoop.hbase.util.Threads;
 import org.apache.hadoop.hbase.wal.AbstractFSWALProvider;
+import org.apache.hadoop.hbase.wal.FSHLogProvider;
 import org.apache.hadoop.hbase.wal.FaultyFSLog;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALEdit;
@@ -654,7 +655,7 @@ public class TestHRegion {
       for (long i = minSeqId; i <= maxSeqId; i += 10) {
         Path recoveredEdits = new Path(recoveredEditsDir, String.format("%019d", i));
         fs.create(recoveredEdits);
-        WALProvider.Writer writer = wals.createRecoveredEditsWriter(fs, recoveredEdits);
+        WALProvider.Writer writer = FSHLogProvider.createWriter(CONF, fs, recoveredEdits, true);
 
         long time = System.nanoTime();
         WALEdit edit = new WALEdit();
@@ -705,7 +706,7 @@ public class TestHRegion {
       for (long i = minSeqId; i <= maxSeqId; i += 10) {
         Path recoveredEdits = new Path(recoveredEditsDir, String.format("%019d", i));
         fs.create(recoveredEdits);
-        WALProvider.Writer writer = wals.createRecoveredEditsWriter(fs, recoveredEdits);
+        WALProvider.Writer writer = FSHLogProvider.createWriter(CONF, fs, recoveredEdits, true);
 
         long time = System.nanoTime();
         WALEdit edit = new WALEdit();
@@ -796,7 +797,7 @@ public class TestHRegion {
       for (long i = minSeqId; i <= maxSeqId; i += 10) {
         Path recoveredEdits = new Path(recoveredEditsDir, String.format("%019d", i));
         fs.create(recoveredEdits);
-        WALProvider.Writer writer = wals.createRecoveredEditsWriter(fs, recoveredEdits);
+        WALProvider.Writer writer = FSHLogProvider.createWriter(CONF, fs, recoveredEdits, true);
 
         long time = System.nanoTime();
         WALEdit edit = null;
@@ -908,7 +909,7 @@ public class TestHRegion {
 
       Path recoveredEdits = new Path(recoveredEditsDir, String.format("%019d", 1000));
       fs.create(recoveredEdits);
-      WALProvider.Writer writer = wals.createRecoveredEditsWriter(fs, recoveredEdits);
+      WALProvider.Writer writer = FSHLogProvider.createWriter(CONF, fs, recoveredEdits, true);
 
       long time = System.nanoTime();
 
@@ -1033,7 +1034,7 @@ public class TestHRegion {
 
         Path recoveredEdits = new Path(recoveredEditsDir, String.format("%019d", 1000));
         fs.create(recoveredEdits);
-        WALProvider.Writer writer = wals.createRecoveredEditsWriter(fs, recoveredEdits);
+        WALProvider.Writer writer = FSHLogProvider.createWriter(walConf, fs, recoveredEdits, true);
 
         for (WAL.Entry entry : flushDescriptors) {
           writer.append(entry);

@@ -802,7 +802,7 @@ public class WALSplitter {
    */
   protected Writer createWriter(Path logfile)
       throws IOException {
-    return walFactory.createRecoveredEditsWriter(fs, logfile);
+    return FSHLogProvider.createWriter(conf, fs, logfile, true);
   }
 
   /**

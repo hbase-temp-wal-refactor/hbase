@@ -378,17 +378,6 @@ public class WALFactory {
     }
   }
 
-  /**
-   * Should be package-private, visible for recovery testing.
-   * Uses defaults.
-   * @return an overwritable writer for recovered edits. caller should close.
-   */
-  @VisibleForTesting
-  public Writer createRecoveredEditsWriter(final FileSystem fs, final Path path)
-      throws IOException {
-    return FSHLogProvider.createWriter(conf, fs, path, true);
-  }
-
   // These static methods are currently used where it's impractical to
   // untangle the reliance on state in the filesystem. They rely on singleton
   // WALFactory that just provides Reader / Writers.
