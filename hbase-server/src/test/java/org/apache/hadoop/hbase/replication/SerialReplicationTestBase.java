@@ -36,6 +36,7 @@ import org.apache.hadoop.hbase.client.TableDescriptorBuilder;
 import org.apache.hadoop.hbase.regionserver.HRegionServer;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.JVMClusterUtil.RegionServerThread;
+import org.apache.hadoop.hbase.wal.FSHLogProvider;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WALFactory;
@@ -184,7 +185,7 @@ public class SerialReplicationTestBase {
 
   protected final void setupWALWriter() throws IOException {
     logPath = new Path(LOG_DIR, name.getMethodName());
-    WRITER = WALFactory.createWALWriter(FS, logPath, UTIL.getConfiguration());
+    WRITER = FSHLogProvider.createWriter(UTIL.getConfiguration(), FS, logPath, false);
   }
 
   protected final void waitUntilReplicationDone(int expectedEntries) throws Exception {

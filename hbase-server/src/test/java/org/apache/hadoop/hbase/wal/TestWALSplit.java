@@ -420,7 +420,7 @@ public class TestWALSplit {
         FILENAME_BEING_SPLIT, conf);
     String parentOfParent = p.getParent().getParent().getName();
     assertEquals(parentOfParent, RegionInfoBuilder.FIRST_META_REGIONINFO.getEncodedName());
-    WALFactory.createRecoveredEditsWriter(fs, p, conf).close();
+    FSHLogProvider.createWriter(conf, fs, p, true).close();
   }
 
   private void useDifferentDFSClient() throws IOException {
@@ -1207,7 +1207,7 @@ public class TestWALSplit {
     int seq = 0;
     int numRegionEventsAdded = 0;
     for (int i = 0; i < writers; i++) {
-      ws[i] = wals.createWALWriter(fs, new Path(WALDIR, WAL_FILE_PREFIX + i));
+      ws[i] = FSHLogProvider.createWriter(conf, fs, new Path(WALDIR, WAL_FILE_PREFIX + i), false);
       for (int j = 0; j < entries; j++) {
         int prefix = 0;
         for (String region : REGIONS) {
@@ -1407,7 +1407,7 @@ public class TestWALSplit {
 
   private void injectEmptyFile(String suffix, boolean closeFile) throws IOException {
     Writer writer =
-        WALFactory.createWALWriter(fs, new Path(WALDIR, WAL_FILE_PREFIX + suffix), conf);
+        FSHLogProvider.createWriter(conf, fs, new Path(WALDIR, WAL_FILE_PREFIX + suffix), false);
     if (closeFile) {
       writer.close();
     }

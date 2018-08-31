@@ -379,18 +379,6 @@ public class WALFactory {
   }
 
   /**
-   * Create a writer for the WAL.
-   * Uses defaults.
-   * <p>
-   * Should be package-private. public only for tests and
-   * {@link org.apache.hadoop.hbase.regionserver.wal.Compressor}
-   * @return A WAL writer. Close when done with it.
-   */
-  public Writer createWALWriter(final FileSystem fs, final Path path) throws IOException {
-    return FSHLogProvider.createWriter(conf, fs, path, false);
-  }
-
-  /**
    * Should be package-private, visible for recovery testing.
    * Uses defaults.
    * @return an overwritable writer for recovered edits. caller should close.
@@ -457,29 +445,6 @@ public class WALFactory {
   public static Reader createReaderIgnoreCustomClass(final FileSystem fs, final Path path,
       final Configuration configuration) throws IOException {
     return getInstance(configuration).createReader(fs, path, null, false);
-  }
-
-  /**
-   * If you already have a WALFactory, you should favor the instance method.
-   * Uses defaults.
-   * @return a Writer that will overwrite files. Caller must close.
-   */
-  static Writer createRecoveredEditsWriter(final FileSystem fs, final Path path,
-      final Configuration configuration)
-      throws IOException {
-    return FSHLogProvider.createWriter(configuration, fs, path, true);
-  }
-
-  /**
-   * If you already have a WALFactory, you should favor the instance method.
-   * Uses defaults.
-   * @return a writer that won't overwrite files. Caller must close.
-   */
-  @VisibleForTesting
-  public static Writer createWALWriter(final FileSystem fs, final Path path,
-      final Configuration configuration)
-      throws IOException {
-    return FSHLogProvider.createWriter(configuration, fs, path, false);
   }
 
   public final WALProvider getWALProvider() {

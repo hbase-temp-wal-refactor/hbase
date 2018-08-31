@@ -32,7 +32,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.WritableUtils;
 
 import org.apache.hbase.thirdparty.com.google.common.base.Preconditions;
-
+import org.apache.hadoop.hbase.wal.FSHLogProvider;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALFactory;
 import org.apache.hadoop.hbase.wal.WALProvider;
@@ -82,7 +82,7 @@ public class Compressor {
       }
       boolean compress = ((ReaderBase)in).hasCompression();
       conf.setBoolean(HConstants.ENABLE_WAL_COMPRESSION, !compress);
-      out = WALFactory.createWALWriter(outFS, output, conf);
+      out = FSHLogProvider.createWriter(conf, outFS, output, false);
 
       WAL.Entry e = null;
       while ((e = in.next()) != null) out.append(e);

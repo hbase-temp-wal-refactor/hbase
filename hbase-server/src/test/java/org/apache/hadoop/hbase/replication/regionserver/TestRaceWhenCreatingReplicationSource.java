@@ -42,6 +42,7 @@ import org.apache.hadoop.hbase.testclassification.MediumTests;
 import org.apache.hadoop.hbase.testclassification.ReplicationTests;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.JVMClusterUtil.RegionServerThread;
+import org.apache.hadoop.hbase.wal.FSHLogProvider;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WALFactory;
@@ -138,7 +139,7 @@ public class TestRaceWhenCreatingReplicationSource {
     Path dir = UTIL.getDataTestDirOnTestFS();
     FS = UTIL.getTestFileSystem();
     LOG_PATH = new Path(dir, "replicated");
-    WRITER = WALFactory.createWALWriter(FS, LOG_PATH, UTIL.getConfiguration());
+    WRITER = FSHLogProvider.createWriter(UTIL.getConfiguration(), FS, LOG_PATH, false);
     UTIL.getAdmin().addReplicationPeer(PEER_ID,
       ReplicationPeerConfig.newBuilder().setClusterKey("127.0.0.1:2181:/hbase")
         .setReplicationEndpointImpl(LocalReplicationEndpoint.class.getName()).build(),
