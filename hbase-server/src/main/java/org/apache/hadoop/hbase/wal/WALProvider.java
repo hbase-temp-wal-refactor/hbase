@@ -31,7 +31,7 @@ import org.apache.hadoop.hbase.regionserver.wal.WALActionsListener;
 import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
 import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
 import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
-import org.apache.hadoop.hbase.replication.regionserver.WALFileLengthProvider;
+import org.apache.hadoop.hbase.replication.regionserver.WALFileSizeProvider;
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**
@@ -114,7 +114,7 @@ public interface WALProvider {
    */
   void addWALActionsListener(WALActionsListener listener);
 
-  default WALFileLengthProvider getWALFileLengthProvider() {
+  default WALFileSizeProvider getWALFileSizeProvider() {
     return path -> getWALs().stream().map(w -> w.getLogFileSizeIfBeingWritten(path))
         .filter(o -> o.isPresent()).findAny().orElse(OptionalLong.empty());
   }
@@ -124,14 +124,14 @@ public interface WALProvider {
    * @param logQueue Queue of wals
    * @param conf configuration
    * @param startPosition start position for the first wal in the queue
-   * @param walFileLengthProvider 
+   * @param walFileSizeProvider 
    * @param serverName name of the server
    * @param metrics metric source
    * @return
    * @throws IOException
    */
   WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
-      long startPosition, WALFileLengthProvider walFileLengthProvider, ServerName serverName,
+      long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
       MetricsSource metrics) throws IOException;
 
   /**

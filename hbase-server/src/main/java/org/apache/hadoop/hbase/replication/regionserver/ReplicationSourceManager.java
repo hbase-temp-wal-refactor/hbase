@@ -150,7 +150,7 @@ public class ReplicationSourceManager implements ReplicationListener {
   private final Configuration conf;
   // The paths to the latest log of each wal group, for new coming peers
   private final Set<WALInfo> latestPaths;
-  private final WALFileLengthProvider walFileLengthProvider;
+  private final WALFileSizeProvider walFileSizeProvider;
   // The number of ms that we wait before moving znodes, HBASE-3596
   private final long sleepBeforeFailover;
   // Homemade executer service for replication
@@ -185,7 +185,7 @@ public class ReplicationSourceManager implements ReplicationListener {
   public ReplicationSourceManager(ReplicationQueueStorage queueStorage,
       ReplicationPeers replicationPeers, ReplicationTracker replicationTracker, Configuration conf,
       Server server, UUID clusterId,
-      WALFileLengthProvider walFileLengthProvider,
+      WALFileSizeProvider walFileSizeProvider,
       SyncReplicationPeerMappingManager syncReplicationPeerMappingManager, WALProvider walProvider) throws IOException {
     this.sources = new ConcurrentHashMap<>();
     this.queueStorage = queueStorage;
@@ -200,7 +200,7 @@ public class ReplicationSourceManager implements ReplicationListener {
     // 30 seconds
     this.sleepBeforeFailover = conf.getLong("replication.sleep.before.failover", 30000);
     this.clusterId = clusterId;
-    this.walFileLengthProvider = walFileLengthProvider;
+    this.walFileSizeProvider = walFileSizeProvider;
     this.syncReplicationPeerMappingManager = syncReplicationPeerMappingManager;
     this.replicationTracker.registerListener(this);
     // It's preferable to failover 1 RS at a time, but with good zk servers
@@ -350,7 +350,7 @@ public class ReplicationSourceManager implements ReplicationListener {
     MetricsSource metrics = new MetricsSource(queueId);
     // init replication source
     src.init(conf, this, queueStorage, replicationPeer, server, queueId, clusterId,
-      walFileLengthProvider, metrics, walProvider);
+      walFileSizeProvider, metrics, walProvider);
     return src;
   }
 

@@ -54,7 +54,7 @@ public interface ReplicationSourceInterface {
    */
   void init(Configuration conf, ReplicationSourceManager manager,
       ReplicationQueueStorage queueStorage, ReplicationPeer replicationPeer, Server server,
-      String queueId, UUID clusterId, WALFileLengthProvider walFileLengthProvider,
+      String queueId, UUID clusterId, WALFileSizeProvider walFileSizeProvider,
       MetricsSource metrics, WALProvider walProvider) throws IOException;
 
   /**
@@ -162,7 +162,7 @@ public interface ReplicationSourceInterface {
   /**
    * @return the wal file length provider
    */
-  WALFileLengthProvider getWALFileLengthProvider();
+  WALFileSizeProvider getWALFileSizeProvider();
 
   /**
    * Try to throttle when the peer config with a bandwidth

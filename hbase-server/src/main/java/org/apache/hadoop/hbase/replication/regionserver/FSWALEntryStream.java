@@ -55,9 +55,9 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
   private FileSystem fs;
 
   public FSWALEntryStream(FileSystem fs, PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
-      long startPosition, WALFileLengthProvider walFileLengthProvider, ServerName serverName,
+      long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
       MetricsSource metrics) throws IOException {
-    super(logQueue, conf, startPosition, walFileLengthProvider, serverName, metrics);
+    super(logQueue, conf, startPosition, walFileSizeProvider, serverName, metrics);
     this.fs = fs;
   }
 

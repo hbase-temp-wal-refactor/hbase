@@ -344,7 +344,7 @@ public class TestWALEntryStream {
     ReplicationSource source = Mockito.mock(ReplicationSource.class);
     when(source.getSourceManager()).thenReturn(mockSourceManager);
     when(source.getSourceMetrics()).thenReturn(new MetricsSource("1"));
-    when(source.getWALFileLengthProvider()).thenReturn(log);
+    when(source.getWALFileSizeProvider()).thenReturn(log);
     when(source.getServer()).thenReturn(mockServer);
     when(source.isRecovered()).thenReturn(recovered);
     when(source.getWalProvider()).thenReturn(wals.getWALProvider());

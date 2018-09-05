@@ -124,7 +124,7 @@ public class Replication implements ReplicationSourceService, ReplicationSinkSer
     SyncReplicationPeerMappingManager mapping = new SyncReplicationPeerMappingManager();
     this.replicationManager = new ReplicationSourceManager(queueStorage, replicationPeers,
         replicationTracker, conf, this.server,clusterId,
-        walProvider != null ? walProvider.getWALFileLengthProvider() : p -> OptionalLong.empty(),
+        walProvider != null ? walProvider.getWALFileSizeProvider() : p -> OptionalLong.empty(),
         mapping, walProvider);
     this.syncReplicationPeerInfoProvider =
         new SyncReplicationPeerInfoProviderImpl(replicationPeers, mapping);

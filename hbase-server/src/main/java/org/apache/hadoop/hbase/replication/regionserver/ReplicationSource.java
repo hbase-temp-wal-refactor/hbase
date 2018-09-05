@@ -121,7 +121,7 @@ public class ReplicationSource implements ReplicationSourceInterface {
   private ReplicationThrottler throttler;
   private long defaultBandwidth;
   private long currentBandwidth;
-  private WALFileLengthProvider walFileLengthProvider;
+  private WALFileSizeProvider walFileSizeProvider;
   @VisibleForTesting
   protected final ConcurrentHashMap<String, ReplicationSourceShipper> workerThreads =
       new ConcurrentHashMap<>();
@@ -149,7 +149,7 @@ public class ReplicationSource implements ReplicationSourceInterface {
   @Override
   public void init(Configuration conf, ReplicationSourceManager manager,
       ReplicationQueueStorage queueStorage, ReplicationPeer replicationPeer, Server server,
-      String queueId, UUID clusterId, WALFileLengthProvider walFileLengthProvider,
+      String queueId, UUID clusterId, WALFileSizeProvider walFileSizeProvider,
       MetricsSource metrics, WALProvider walProvider) throws IOException {
     this.server = server;
     this.conf = HBaseConfiguration.create(conf);
@@ -175,7 +175,7 @@ public class ReplicationSource implements ReplicationSourceInterface {
     currentBandwidth = getCurrentBandwidth();
     this.throttler = new ReplicationThrottler((double) currentBandwidth / 10.0);
     this.totalBufferUsed = manager.getTotalBufferUsed();
-    this.walFileLengthProvider = walFileLengthProvider;
+    this.walFileSizeProvider = walFileSizeProvider;
     this.walProvider = walProvider;
     LOG.info("queueId={}, ReplicationSource : {}, currentBandwidth={}", queueId,
       replicationPeer.getId(), this.currentBandwidth);
@@ -658,8 +658,8 @@ public class ReplicationSource implements ReplicationSourceInterface {
   }
 
   @Override
-  public WALFileLengthProvider getWALFileLengthProvider() {
-    return walFileLengthProvider;
+  public WALFileSizeProvider getWALFileSizeProvider() {
+    return walFileSizeProvider;
   }
 
   @Override

@@ -53,7 +53,7 @@ import org.apache.hadoop.hbase.replication.regionserver.PeerActionListener;
 import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
 import org.apache.hadoop.hbase.replication.regionserver.SyncReplicationPeerInfoProvider;
 import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
-import org.apache.hadoop.hbase.replication.regionserver.WALFileLengthProvider;
+import org.apache.hadoop.hbase.replication.regionserver.WALFileSizeProvider;
 import org.apache.hadoop.hbase.util.CommonFSUtils;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.FSUtils;
@@ -368,10 +368,11 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
 
   @Override
   public WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
-                                     long startPosition, WALFileLengthProvider walFileLengthProvider, ServerName serverName,
-                                     MetricsSource metrics) throws IOException {
+                                     long startPosition, WALFileSizeProvider walFileSizeProvider,
+                                     ServerName serverName, MetricsSource metrics)
+                                         throws IOException {
     return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
-            walFileLengthProvider, serverName, metrics);
+            walFileSizeProvider, serverName, metrics);
   }
 
   @Override

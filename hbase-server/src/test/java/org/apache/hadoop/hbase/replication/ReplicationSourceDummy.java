@@ -29,7 +29,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
 import org.apache.hadoop.hbase.replication.regionserver.ReplicationSourceInterface;
 import org.apache.hadoop.hbase.replication.regionserver.ReplicationSourceManager;
-import org.apache.hadoop.hbase.replication.regionserver.WALFileLengthProvider;
+import org.apache.hadoop.hbase.replication.regionserver.WALFileSizeProvider;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WALInfo;
@@ -45,18 +45,18 @@ public class ReplicationSourceDummy implements ReplicationSourceInterface {
   private String peerClusterId;
   private WALInfo currentWALInfo;
   private MetricsSource metrics;
-  private WALFileLengthProvider walFileLengthProvider;
+  private WALFileSizeProvider walFileSizeProvider;
   private AtomicBoolean startup = new AtomicBoolean(false);
 
   @Override
   public void init(Configuration conf, ReplicationSourceManager manager,
       ReplicationQueueStorage rq, ReplicationPeer rp, Server server, String peerClusterId,
-      UUID clusterId, WALFileLengthProvider walFileLengthProvider, MetricsSource metrics, WALProvider walProvider)
+      UUID clusterId, WALFileSizeProvider walFileSizeProvider, MetricsSource metrics, WALProvider walProvider)
       throws IOException {
     this.manager = manager;
     this.peerClusterId = peerClusterId;
     this.metrics = metrics;
-    this.walFileLengthProvider = walFileLengthProvider;
+    this.walFileSizeProvider = walFileSizeProvider;
     this.replicationPeer = rp;
   }
 
@@ -147,8 +147,8 @@ public class ReplicationSourceDummy implements ReplicationSourceInterface {
   }
 
   @Override
-  public WALFileLengthProvider getWALFileLengthProvider() {
-    return walFileLengthProvider;
+  public WALFileSizeProvider getWALFileSizeProvider() {
+    return walFileSizeProvider;
   }
 
   @Override

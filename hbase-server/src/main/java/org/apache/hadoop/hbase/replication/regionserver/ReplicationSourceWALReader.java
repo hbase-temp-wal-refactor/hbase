@@ -118,7 +118,7 @@ class ReplicationSourceWALReader extends Thread {
     int sleepMultiplier = 1;
     while (isReaderRunning()) { // we only loop back here if something fatal happened to our stream
       try (WALEntryStream entryStream = this.source.getWalProvider().getWalStream(logQueue, conf,
-        currentPosition, source.getWALFileLengthProvider(), source.getServerWALsBelongTo(),
+        currentPosition, source.getWALFileSizeProvider(), source.getServerWALsBelongTo(),
         source.getSourceMetrics())) {
         while (isReaderRunning()) { // loop here to keep reusing stream while we can
           if (!source.isPeerEnabled()) {

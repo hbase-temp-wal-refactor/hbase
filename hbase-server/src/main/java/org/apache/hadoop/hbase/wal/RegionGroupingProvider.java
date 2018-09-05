@@ -20,7 +20,6 @@ package org.apache.hadoop.hbase.wal;
 
 import static org.apache.hadoop.hbase.wal.AbstractFSWALProvider.META_WAL_PROVIDER_ID;
 import static org.apache.hadoop.hbase.wal.AbstractFSWALProvider.WAL_FILE_NAME_DELIMITER;
-import static org.apache.hadoop.hbase.wal.AbstractFSWALProvider.getWALDirectoryName;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,7 +42,7 @@ import org.apache.hadoop.hbase.replication.regionserver.FSWALEntryStream;
 import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
 import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
 import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
-import org.apache.hadoop.hbase.replication.regionserver.WALFileLengthProvider;
+import org.apache.hadoop.hbase.replication.regionserver.WALFileSizeProvider;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.CommonFSUtils;
 import org.apache.hadoop.hbase.util.FSUtils;
@@ -308,10 +307,10 @@ public class RegionGroupingProvider implements WALProvider {
 
   @Override
   public WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
-      long startPosition, WALFileLengthProvider walFileLengthProvider, ServerName serverName,
+      long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
       MetricsSource metrics) throws IOException {
     return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
-      walFileLengthProvider, serverName, metrics);
+      walFileSizeProvider, serverName, metrics);
   }
 
   @Override

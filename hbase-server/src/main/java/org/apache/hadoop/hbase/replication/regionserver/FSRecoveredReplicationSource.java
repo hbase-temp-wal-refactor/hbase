@@ -46,10 +46,10 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource {
   @Override
   public void init(Configuration conf, ReplicationSourceManager manager,
       ReplicationQueueStorage queueStorage, ReplicationPeer replicationPeer, Server server,
-      String peerClusterZnode, UUID clusterId, WALFileLengthProvider walFileLengthProvider,
+      String peerClusterZnode, UUID clusterId, WALFileSizeProvider walFileSizeProvider,
       MetricsSource metrics, WALProvider walProvider) throws IOException {
     super.init(conf, manager, queueStorage, replicationPeer, server, peerClusterZnode, clusterId,
-      walFileLengthProvider, metrics, walProvider);
+      walFileSizeProvider, metrics, walProvider);
     this.logDir = AbstractFSWALProvider.getWALDirectoryName(server.getServerName().toString());
   }
   

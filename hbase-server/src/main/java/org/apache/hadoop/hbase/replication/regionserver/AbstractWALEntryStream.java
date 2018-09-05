@@ -55,7 +55,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
   protected long currentPositionOfReader = 0;
   protected final PriorityBlockingQueue<WALInfo> logQueue;
   protected final Configuration conf;
-  protected final WALFileLengthProvider walFileLengthProvider;
+  protected final WALFileSizeProvider walFileSizeProvider;
   // which region server the WALs belong to
   protected final ServerName serverName;
   protected final MetricsSource metrics;
@@ -72,12 +72,12 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
    * @throws IOException
    */
   public AbstractWALEntryStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
-      long startPosition, WALFileLengthProvider walFileLengthProvider, ServerName serverName,
+      long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
       MetricsSource metrics) throws IOException {
     this.logQueue = logQueue;
     this.conf = conf;
     this.currentPositionOfEntry = startPosition;
-    this.walFileLengthProvider = walFileLengthProvider;
+    this.walFileSizeProvider = walFileSizeProvider;
     this.serverName = serverName;
     this.metrics = metrics;
     this.eofAutoRecovery = conf.getBoolean("replication.source.eof.autorecovery", false);
@@ -186,7 +186,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
   private boolean readNextEntryAndRecordReaderPosition() throws IOException {
     Entry readEntry = reader.next();
     long readerPos = reader.getPosition();
-    OptionalLong fileLength = walFileLengthProvider.getLogFileSizeIfBeingWritten(currentPath);
+    OptionalLong fileLength = walFileSizeProvider.getLogFileSizeIfBeingWritten(currentPath);
     if (fileLength.isPresent() && readerPos > fileLength.getAsLong()) {
       // see HBASE-14004, for AsyncFSWAL which uses fan-out, it is possible that we read uncommitted
       // data, so we need to make sure that we do not read beyond the committed file length.

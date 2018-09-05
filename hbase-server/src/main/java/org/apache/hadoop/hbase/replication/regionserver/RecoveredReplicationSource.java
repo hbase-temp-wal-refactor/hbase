@@ -41,10 +41,10 @@ public abstract class RecoveredReplicationSource extends ReplicationSource {
   @Override
   public void init(Configuration conf, ReplicationSourceManager manager,
       ReplicationQueueStorage queueStorage, ReplicationPeer replicationPeer, Server server,
-      String peerClusterZnode, UUID clusterId, WALFileLengthProvider walFileLengthProvider,
+      String peerClusterZnode, UUID clusterId, WALFileSizeProvider walFileSizeProvider,
       MetricsSource metrics, WALProvider walProvider) throws IOException {
     super.init(conf, manager, queueStorage, replicationPeer, server, peerClusterZnode,
-      clusterId, walFileLengthProvider, metrics, walProvider);
+      clusterId, walFileSizeProvider, metrics, walProvider);
     this.actualPeerId = this.replicationQueueInfo.getPeerId();
   }
 
