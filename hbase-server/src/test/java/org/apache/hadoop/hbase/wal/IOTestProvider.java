@@ -310,7 +310,7 @@ public class IOTestProvider implements WALProvider {
   }
 
   @Override
-  public WALMetaDataProvider getWalMetaDataProvider() throws IOException {
+  public WALMetaDataProvider getWALMetaDataProvider() throws IOException {
     return new FSWALMetaDataProvider(CommonFSUtils.getWALFileSystem(conf));
   }
 

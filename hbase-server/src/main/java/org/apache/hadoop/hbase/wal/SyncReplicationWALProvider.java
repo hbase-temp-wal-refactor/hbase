@@ -376,7 +376,7 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
   }
 
   @Override
-  public WALMetaDataProvider getWalMetaDataProvider() throws IOException {
+  public WALMetaDataProvider getWALMetaDataProvider() throws IOException {
     return new FSWALMetaDataProvider(CommonFSUtils.getWALFileSystem(conf));
   }
 

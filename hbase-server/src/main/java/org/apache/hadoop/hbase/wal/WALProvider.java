@@ -138,18 +138,18 @@ public interface WALProvider {
    * @return MetaData provider for the given WAL implementation
    * @throws IOException
    */
-  WALMetaDataProvider getWalMetaDataProvider() throws IOException;
+  WALMetaDataProvider getWALMetaDataProvider() throws IOException;
 
   /**
-   * Creates WALIdentity for Wal path/name
+   * Creates WALIdentity for WAL path/name
    * @param wal
-   * @return
+   * @return WALIdentity instance for the WAL
    */
   WALIdentity createWALIdentity(String wal);
 
   /**
-   * Replication source to replicate edits of a dead regionserver
-   * @return
+   * Replication source to replicate edits for a dead regionserver
+   * @return RecoveredReplicationSource instance
    */
   RecoveredReplicationSource getRecoveredReplicationSource();
 }

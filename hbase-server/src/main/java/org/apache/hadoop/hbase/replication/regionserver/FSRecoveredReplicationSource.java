@@ -61,7 +61,7 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource {
         new PriorityBlockingQueue<WALIdentity>(queueSizePerGroup, new LogsComparator());
     WALIdentityLoop:
     for (WALIdentity WALIdentity : queue) {
-      if (walProvider.getWalMetaDataProvider()
+      if (walProvider.getWALMetaDataProvider()
           .exists(((FSWALIdentity)WALIdentity).getPath().toString())) {
         // still in same location, don't need to do anything
         newWALIdentities.add(WALIdentity);
@@ -89,7 +89,7 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource {
               deadRsDirectory.suffix(AbstractFSWALProvider.SPLITTING_EXT), WALIdentity.getName()) };
           for (Path possibleLogLocation : locs) {
             LOG.info("Possible location " + possibleLogLocation.toUri().toString());
-            if (walProvider.getWalMetaDataProvider().exists(possibleLogLocation.toString())) {
+            if (walProvider.getWALMetaDataProvider().exists(possibleLogLocation.toString())) {
               // We found the right new location
               LOG.info("Log " + WALIdentity + " still exists at " + possibleLogLocation);
               newWALIdentities.add(new FSWALIdentity(possibleLogLocation));
@@ -122,10 +122,10 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource {
   // N.B. the ReplicationSyncUp tool sets the manager.getWALDir to the root of the wal
   // area rather than to the wal area for a particular region server.
   private WALIdentity getReplSyncUpPath(WALIdentity path) throws IOException {
-    WALIdentity[] rss = walProvider.getWalMetaDataProvider().list(
+    WALIdentity[] rss = walProvider.getWALMetaDataProvider().list(
         this.walProvider.createWALIdentity(logDir));
     for (WALIdentity rs : rss) {
-      WALIdentity[] logs = walProvider.getWalMetaDataProvider().list(rs);
+      WALIdentity[] logs = walProvider.getWALMetaDataProvider().list(rs);
       for (WALIdentity log : logs) {
         WALIdentity p = this.walProvider.createWALIdentity(
             new Path(((FSWALIdentity)rs).getPath(), log.getName()).toString());

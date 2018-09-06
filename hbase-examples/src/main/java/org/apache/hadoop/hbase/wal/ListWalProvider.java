@@ -175,7 +175,7 @@ public class ListWalProvider implements WALProvider {
   }
 
   @Override
-  public WALMetaDataProvider getWalMetaDataProvider() throws IOException {
+  public WALMetaDataProvider getWALMetaDataProvider() throws IOException {
     return listWalMetaDataProvider;
   }
 
