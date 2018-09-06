@@ -28,9 +28,9 @@ import org.apache.yetus.audience.InterfaceStability;
  */
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public interface WALInfo extends Comparable<WALInfo> {
+public interface WALIdentity extends Comparable<WALIdentity> {
 
-  WALInfo UNKNOWN = new WALInfo() {
+  WALIdentity UNKNOWN = new WALIdentity() {
     
     @Override
     public long getWalStartTime() {
@@ -48,7 +48,7 @@ public interface WALInfo extends Comparable<WALInfo> {
     }
 
     @Override
-    public int compareTo(WALInfo o) {
+    public int compareTo(WALIdentity o) {
       return 0;
     }
   };

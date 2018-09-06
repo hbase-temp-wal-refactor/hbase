@@ -31,7 +31,7 @@ import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.Threads;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WALEdit;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,14 +56,14 @@ public class ReplicationSourceShipper extends Thread {
 
   private final Configuration conf;
   protected final String walGroupId;
-  protected final PriorityBlockingQueue<WALInfo> queue;
+  protected final PriorityBlockingQueue<WALIdentity> queue;
   private final ReplicationSource source;
 
   // Last position in the log that we sent to ZooKeeper
   // It will be accessed by the stats thread so make it volatile
   private volatile long currentPosition = -1;
   // Path of the current log
-  private WALInfo currentPath;
+  private WALIdentity currentPath;
   // Current state of the worker thread
   private volatile WorkerState state;
   protected ReplicationSourceWALReader entryReader;
@@ -76,7 +76,7 @@ public class ReplicationSourceShipper extends Thread {
   private final int getEntriesTimeout;
 
   public ReplicationSourceShipper(Configuration conf, String walGroupId,
-      PriorityBlockingQueue<WALInfo> queue, ReplicationSource source) {
+      PriorityBlockingQueue<WALIdentity> queue, ReplicationSource source) {
     this.conf = conf;
     this.walGroupId = walGroupId;
     this.queue = queue;
@@ -293,7 +293,7 @@ public class ReplicationSourceShipper extends Thread {
       name + ".replicationSource.shipper" + walGroupId + "," + source.getQueueId(), handler);
   }
 
-  WALInfo getCurrentWALInfo() {
+  WALIdentity getCurrentWALIdentity() {
     return entryReader.getCurrentPath();
   }
 

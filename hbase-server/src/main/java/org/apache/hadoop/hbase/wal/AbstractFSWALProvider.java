@@ -556,7 +556,7 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
   }
   
   @Override
-  public WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
+  public WALEntryStream getWalStream(PriorityBlockingQueue<WALIdentity> logQueue, Configuration conf,
       long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
       MetricsSource metrics) throws IOException {
     return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
@@ -569,8 +569,8 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
   }
   
   @Override
-  public WALInfo createWalInfo(String wal) {
-    return new FSWALInfo(wal);
+  public WALIdentity createWALIdentity(String wal) {
+    return new FSWALIdentity(wal);
   }
   
   @Override

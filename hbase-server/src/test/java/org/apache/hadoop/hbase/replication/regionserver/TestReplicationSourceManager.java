@@ -84,11 +84,11 @@ import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.JVMClusterUtil;
 import org.apache.hadoop.hbase.util.Pair;
-import org.apache.hadoop.hbase.wal.FSWALInfo;
+import org.apache.hadoop.hbase.wal.FSWALIdentity;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALEdit;
 import org.apache.hadoop.hbase.wal.WALFactory;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.hadoop.hbase.wal.WALKeyImpl;
 import org.apache.hadoop.hbase.wal.WALProvider;
 import org.apache.hadoop.hbase.zookeeper.MetaTableLocator;
@@ -343,7 +343,7 @@ public abstract class TestReplicationSourceManager {
     when(source.isRecovered()).thenReturn(false);
     when(source.isSyncReplication()).thenReturn(false);
     manager.logPositionAndCleanOldLogs(source,
-      new WALEntryBatch(0, manager.getSources().get(0).getCurrentWALInfo()));
+      new WALEntryBatch(0, manager.getSources().get(0).getCurrentWALIdentity()));
 
     wal.append(hri,
       new WALKeyImpl(hri.getEncodedNameAsBytes(), test, System.currentTimeMillis(), mvcc, scopes),
@@ -578,7 +578,7 @@ public abstract class TestReplicationSourceManager {
       assertNotNull(source);
       final int sizeOfSingleLogQueue = source.getSourceMetrics().getSizeOfLogQueue();
       // Enqueue log and check if metrics updated
-      source.enqueueLog(new FSWALInfo(new Path("abc")));
+      source.enqueueLog(new FSWALIdentity(new Path("abc")));
       assertEquals(1 + sizeOfSingleLogQueue, source.getSourceMetrics().getSizeOfLogQueue());
       assertEquals(source.getSourceMetrics().getSizeOfLogQueue() + globalLogQueueSizeInitial,
         globalSource.getSizeOfLogQueue());
@@ -624,7 +624,7 @@ public abstract class TestReplicationSourceManager {
       // make sure that we can deal with files which does not exist
       String walNameNotExists =
         "remoteWAL-12345-" + slaveId + ".12345" + ReplicationUtils.SYNC_WAL_SUFFIX;
-      WALInfo wal = new FSWALInfo(new Path(logDir, walNameNotExists));
+      WALIdentity wal = new FSWALIdentity(new Path(logDir, walNameNotExists));
       manager.preLogRoll(wal);
       manager.postLogRoll(wal);
 
@@ -635,7 +635,7 @@ public abstract class TestReplicationSourceManager {
       Path remoteWAL =
         new Path(remoteLogDirForPeer, walName).makeQualified(fs.getUri(), fs.getWorkingDirectory());
       fs.create(remoteWAL).close();
-      wal = new FSWALInfo(new Path(logDir, walName));
+      wal = new FSWALIdentity(new Path(logDir, walName));
       manager.preLogRoll(wal);
       manager.postLogRoll(wal);
 

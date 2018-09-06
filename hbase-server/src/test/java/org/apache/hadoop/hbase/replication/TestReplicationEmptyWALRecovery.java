@@ -33,7 +33,7 @@ import org.apache.hadoop.hbase.replication.regionserver.ReplicationSourceInterfa
 import org.apache.hadoop.hbase.testclassification.LargeTests;
 import org.apache.hadoop.hbase.testclassification.ReplicationTests;
 import org.apache.hadoop.hbase.wal.AbstractFSWALProvider;
-import org.apache.hadoop.hbase.wal.FSWALInfo;
+import org.apache.hadoop.hbase.wal.FSWALIdentity;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -71,7 +71,7 @@ public class TestReplicationEmptyWALRecovery extends TestReplicationBase {
           for (ReplicationSourceInterface rsi : replicationService.getReplicationManager()
               .getSources()) {
             ReplicationSource source = (ReplicationSource) rsi;
-            FSWALInfo wi = (FSWALInfo) source.getCurrentWALInfo();
+            FSWALIdentity wi = (FSWALIdentity) source.getCurrentWALIdentity();
             if (!currentFile.equals(wi.getPath())) {
               return false;
             }
@@ -107,8 +107,8 @@ public class TestReplicationEmptyWALRecovery extends TestReplicationBase {
     for (int i = 0; i < numRs; i++) {
       HRegionServer hrs = utility1.getHBaseCluster().getRegionServer(i);
       Replication replicationService = (Replication) hrs.getReplicationSourceService();
-      replicationService.getReplicationManager().preLogRoll(new FSWALInfo(emptyWalPaths.get(i)));
-      replicationService.getReplicationManager().postLogRoll(new FSWALInfo(emptyWalPaths.get(i)));
+      replicationService.getReplicationManager().preLogRoll(new FSWALIdentity(emptyWalPaths.get(i)));
+      replicationService.getReplicationManager().postLogRoll(new FSWALIdentity(emptyWalPaths.get(i)));
       RegionInfo regionInfo =
         utility1.getHBaseCluster().getRegions(htable1.getName()).get(0).getRegionInfo();
       WAL wal = hrs.getWAL(regionInfo);

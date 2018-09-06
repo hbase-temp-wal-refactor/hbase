@@ -130,7 +130,7 @@ public interface WALProvider {
    * @return
    * @throws IOException
    */
-  WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
+  WALEntryStream getWalStream(PriorityBlockingQueue<WALIdentity> logQueue, Configuration conf,
       long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
       MetricsSource metrics) throws IOException;
 
@@ -141,11 +141,11 @@ public interface WALProvider {
   WALMetaDataProvider getWalMetaDataProvider() throws IOException;
 
   /**
-   * Creates WalInfo for Wal path/name
+   * Creates WALIdentity for Wal path/name
    * @param wal
    * @return
    */
-  WALInfo createWalInfo(String wal);
+  WALIdentity createWALIdentity(String wal);
 
   /**
    * Replication source to replicate edits of a dead regionserver

@@ -24,7 +24,7 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.replication.WALEntryFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**
@@ -43,7 +43,7 @@ public class SerialReplicationSourceWALReader extends ReplicationSourceWALReader
   private final SerialReplicationChecker checker;
 
   public SerialReplicationSourceWALReader(Configuration conf,
-      PriorityBlockingQueue<WALInfo> logQueue, long startPosition, WALEntryFilter filter,
+      PriorityBlockingQueue<WALIdentity> logQueue, long startPosition, WALEntryFilter filter,
       ReplicationSource source) {
     super(conf, logQueue, startPosition, filter, source);
     checker = new SerialReplicationChecker(conf, source);
@@ -52,7 +52,7 @@ public class SerialReplicationSourceWALReader extends ReplicationSourceWALReader
   @Override
   protected WALEntryBatch readWALEntries(WALEntryStream entryStream)
       throws IOException, InterruptedException {
-    WALInfo currentPath = entryStream.getCurrentWalInfo();
+    WALIdentity currentPath = entryStream.getCurrentWALIdentity();
     if (!entryStream.hasNext()) {
       // check whether we have switched a file
       if (currentPath != null && switched(entryStream, currentPath)) {
@@ -67,7 +67,7 @@ public class SerialReplicationSourceWALReader extends ReplicationSourceWALReader
       }
     } else {
       // when reading from the entry stream first time we will enter here
-      currentPath = entryStream.getCurrentWalInfo();
+      currentPath = entryStream.getCurrentWALIdentity();
     }
     long positionBefore = entryStream.getPosition();
     WALEntryBatch batch = createBatch(entryStream);

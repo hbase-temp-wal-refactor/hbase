@@ -40,13 +40,13 @@ public class FSWALMetaDataProvider implements WALMetaDataProvider {
   }
 
   @Override
-  public WALInfo[] list(WALInfo logDir) throws IOException {
-    FileStatus[] listStatus = fs.listStatus(((FSWALInfo)logDir).getPath());
-    WALInfo[] walInfos = new FSWALInfo[listStatus.length];
+  public WALIdentity[] list(WALIdentity logDir) throws IOException {
+    FileStatus[] listStatus = fs.listStatus(((FSWALIdentity)logDir).getPath());
+    WALIdentity[] WALIdentitys = new FSWALIdentity[listStatus.length];
     for (FileStatus fileStatus : listStatus) {
-      walInfos[0] = new FSWALInfo(fileStatus.getPath());
+      WALIdentitys[0] = new FSWALIdentity(fileStatus.getPath());
     }
-    return walInfos;
+    return WALIdentitys;
   }
 
 }

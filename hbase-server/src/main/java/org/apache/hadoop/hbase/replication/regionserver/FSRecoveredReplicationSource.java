@@ -30,8 +30,8 @@ import org.apache.hadoop.hbase.replication.ReplicationPeer;
 import org.apache.hadoop.hbase.replication.ReplicationQueueStorage;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.wal.AbstractFSWALProvider;
-import org.apache.hadoop.hbase.wal.FSWALInfo;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.FSWALIdentity;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.hadoop.hbase.wal.WALProvider;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
@@ -54,23 +54,26 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource {
   }
   
   @Override
-  public void locateRecoveredWALInfos(PriorityBlockingQueue<WALInfo> queue) throws IOException {
-    boolean hasWALInfoChanged = false;
-    PriorityBlockingQueue<WALInfo> newWALInfos =
-        new PriorityBlockingQueue<WALInfo>(queueSizePerGroup, new LogsComparator());
-    walinfoLoop:
-    for (WALInfo walinfo : queue) {
-      if (walProvider.getWalMetaDataProvider().exists(((FSWALInfo)walinfo).getPath().toString())) { // still in same location, don't need to do anything
-        newWALInfos.add(walinfo);
+  public void locateRecoveredWALIdentities(PriorityBlockingQueue<WALIdentity> queue)
+      throws IOException {
+    boolean hasWALIdentityChanged = false;
+    PriorityBlockingQueue<WALIdentity> newWALIdentities =
+        new PriorityBlockingQueue<WALIdentity>(queueSizePerGroup, new LogsComparator());
+    WALIdentityLoop:
+    for (WALIdentity WALIdentity : queue) {
+      if (walProvider.getWalMetaDataProvider()
+          .exists(((FSWALIdentity)WALIdentity).getPath().toString())) {
+        // still in same location, don't need to do anything
+        newWALIdentities.add(WALIdentity);
         continue;
       }
-      // WALInfo changed - try to find the right WALInfo.
-      hasWALInfoChanged = true;
+      // WALIdentity changed - try to find the right WALIdentity.
+      hasWALIdentityChanged = true;
       if (server instanceof ReplicationSyncUp.DummyServer) {
         // In the case of disaster/recovery, HMaster may be shutdown/crashed before flush data
         // from .logs to .oldlogs. Loop into .logs folders and check whether a match exists
-        WALInfo newWALInfo = getReplSyncUpPath(walinfo);
-        newWALInfos.add(newWALInfo);
+        WALIdentity newWALIdentity = getReplSyncUpPath(WALIdentity);
+        newWALIdentities.add(newWALIdentity);
         continue;
       } else {
         // See if Path exists in the dead RS folder (there could be a chain of failures
@@ -82,27 +85,27 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource {
           final Path deadRsDirectory =
               new Path(walDir, AbstractFSWALProvider.getWALDirectoryName(curDeadServerName
                   .getServerName()));
-          Path[] locs = new Path[] { new Path(deadRsDirectory, walinfo.getName()), new Path(
-              deadRsDirectory.suffix(AbstractFSWALProvider.SPLITTING_EXT), walinfo.getName()) };
+          Path[] locs = new Path[] { new Path(deadRsDirectory, WALIdentity.getName()), new Path(
+              deadRsDirectory.suffix(AbstractFSWALProvider.SPLITTING_EXT), WALIdentity.getName()) };
           for (Path possibleLogLocation : locs) {
             LOG.info("Possible location " + possibleLogLocation.toUri().toString());
             if (walProvider.getWalMetaDataProvider().exists(possibleLogLocation.toString())) {
               // We found the right new location
-              LOG.info("Log " + walinfo + " still exists at " + possibleLogLocation);
-              newWALInfos.add(new FSWALInfo(possibleLogLocation));
-              continue walinfoLoop;
+              LOG.info("Log " + WALIdentity + " still exists at " + possibleLogLocation);
+              newWALIdentities.add(new FSWALIdentity(possibleLogLocation));
+              continue WALIdentityLoop;
             }
           }
         }
         // didn't find a new location
         LOG.error(
-          String.format("WAL Path %s doesn't exist and couldn't find its new location", walinfo));
-        newWALInfos.add(walinfo);
+          String.format("WAL Path %s doesn't exist and couldn't find its new location", WALIdentity));
+        newWALIdentities.add(WALIdentity);
       }
     }
 
-    if (hasWALInfoChanged) {
-      if (newWALInfos.size() != queue.size()) { // this shouldn't happen
+    if (hasWALIdentityChanged) {
+      if (newWALIdentities.size() != queue.size()) { // this shouldn't happen
         LOG.error("Recovery queue size is incorrect");
         throw new IOException("Recovery queue size error");
       }
@@ -110,20 +113,22 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource {
       // since this is a recovered queue with no new incoming logs,
       // there shouldn't be any concurrency issues
       queue.clear();
-      for (WALInfo walinfo : newWALInfos) {
-        queue.add(walinfo);
+      for (WALIdentity WALIdentity : newWALIdentities) {
+        queue.add(WALIdentity);
       }
     }
   }
 
   // N.B. the ReplicationSyncUp tool sets the manager.getWALDir to the root of the wal
   // area rather than to the wal area for a particular region server.
-  private WALInfo getReplSyncUpPath(WALInfo path) throws IOException {
-    WALInfo[] rss = walProvider.getWalMetaDataProvider().list(this.walProvider.createWalInfo(logDir));
-    for (WALInfo rs : rss) {
-      WALInfo[] logs = walProvider.getWalMetaDataProvider().list(rs);
-      for (WALInfo log : logs) {
-        WALInfo p = this.walProvider.createWalInfo(new Path(((FSWALInfo)rs).getPath(), log.getName()).toString());
+  private WALIdentity getReplSyncUpPath(WALIdentity path) throws IOException {
+    WALIdentity[] rss = walProvider.getWalMetaDataProvider().list(
+        this.walProvider.createWALIdentity(logDir));
+    for (WALIdentity rs : rss) {
+      WALIdentity[] logs = walProvider.getWalMetaDataProvider().list(rs);
+      for (WALIdentity log : logs) {
+        WALIdentity p = this.walProvider.createWALIdentity(
+            new Path(((FSWALIdentity)rs).getPath(), log.getName()).toString());
         if (p.getName().equals(path.getName())) {
           LOG.info("Log " + p.getName() + " found at " + p);
           return p;

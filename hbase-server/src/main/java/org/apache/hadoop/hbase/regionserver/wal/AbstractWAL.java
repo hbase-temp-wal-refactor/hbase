@@ -50,7 +50,7 @@ import org.apache.hadoop.hbase.util.CollectionUtils;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALEdit;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.hadoop.hbase.wal.WALKeyImpl;
 import org.apache.hadoop.hbase.wal.WALProvider.WriterBase;
 import org.apache.hadoop.util.StringUtils;
@@ -339,7 +339,7 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
   /**
    * Tell listeners about pre log roll.
    */
-  protected void tellListenersAboutPreLogRoll(final WALInfo oldInfo, final WALInfo newInfo)
+  protected void tellListenersAboutPreLogRoll(final WALIdentity oldInfo, final WALIdentity newInfo)
       throws IOException {
     coprocessorHost.preWALRoll(oldInfo, newInfo);
 
@@ -353,7 +353,7 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
   /**
    * Tell listeners about post log roll.
    */
-  protected void tellListenersAboutPostLogRoll(final WALInfo oldPath, final WALInfo newPath)
+  protected void tellListenersAboutPostLogRoll(final WALIdentity oldPath, final WALIdentity newPath)
       throws IOException {
     if (!this.listeners.isEmpty()) {
       for (WALActionsListener i : this.listeners) {

@@ -32,9 +32,9 @@ import org.apache.hadoop.hbase.regionserver.wal.ProtobufLogReader;
 import org.apache.hadoop.hbase.util.CancelableProgressable;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.LeaseNotRecoveredException;
-import org.apache.hadoop.hbase.wal.FSWALInfo;
+import org.apache.hadoop.hbase.wal.FSWALIdentity;
 import org.apache.hadoop.hbase.wal.WALFactory;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WAL.Reader;
 import org.apache.yetus.audience.InterfaceAudience;
@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Streaming access to WAL entries. This class is given a queue of WAL {@link WALInfo}, and continually
+ * Streaming access to WAL entries. This class is given a queue of WAL {@link WALIdentity}, and continually
  * iterates through all the WAL {@link Entry} in the queue. When it's done reading from a Path, it
  * dequeues it and starts reading from the next.
  */
@@ -54,7 +54,7 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
 
   private FileSystem fs;
 
-  public FSWALEntryStream(FileSystem fs, PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
+  public FSWALEntryStream(FileSystem fs, PriorityBlockingQueue<WALIdentity> logQueue, Configuration conf,
       long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
       MetricsSource metrics) throws IOException {
     super(logQueue, conf, startPosition, walFileSizeProvider, serverName, metrics);
@@ -68,7 +68,7 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
     final long trailerSize = currentTrailerSize();
     FileStatus stat = null;
     try {
-      stat = fs.getFileStatus(((FSWALInfo)this.currentPath).getPath());
+      stat = fs.getFileStatus(((FSWALIdentity)this.currentPath).getPath());
     } catch (IOException exception) {
       LOG.warn("Couldn't get file length information about log {}, it {} closed cleanly {}",
         currentPath, trailerSize < 0 ? "was not" : "was", getCurrentPathStat());
@@ -139,7 +139,7 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
     // If the log was archived, continue reading from there
     Path archivedLog = getArchivedLog(path);
     if (!path.equals(archivedLog)) {
-      openReader(new FSWALInfo(archivedLog));
+      openReader(new FSWALIdentity(archivedLog));
     } else {
       throw fnfe;
     }
@@ -163,17 +163,17 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
   }
 
   @Override
-  protected void handleIOException(WALInfo path, IOException e) throws IOException {
+  protected void handleIOException(WALIdentity path, IOException e) throws IOException {
     try {
       throw e;
     } catch (FileNotFoundException fnfe) {
-      handleFileNotFound(((FSWALInfo)path).getPath(), fnfe);
+      handleFileNotFound(((FSWALIdentity)path).getPath(), fnfe);
     } catch (EOFException eo) {
       handleEofException(eo);
     } catch (LeaseNotRecoveredException lnre) {
       // HBASE-15019 the WAL was not closed due to some hiccup.
       LOG.warn("Try to recover the WAL lease " + currentPath, lnre);
-      recoverLease(conf, ((FSWALInfo)currentPath).getPath());
+      recoverLease(conf, ((FSWALIdentity)currentPath).getPath());
       reader = null;
     }
   }
@@ -194,7 +194,7 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
     if ((e instanceof EOFException || e.getCause() instanceof EOFException) && logQueue.size() > 1
         && this.eofAutoRecovery) {
       try {
-        if (fs.getFileStatus(((FSWALInfo)logQueue.peek()).getPath()).getLen() == 0) {
+        if (fs.getFileStatus(((FSWALIdentity)logQueue.peek()).getPath()).getLen() == 0) {
           LOG.warn("Forcing removal of 0 length log in queue: " + logQueue.peek());
           logQueue.remove();
           setPosition(0);
@@ -217,8 +217,8 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
   }
 
   @Override
-  protected Reader createReader(WALInfo path, Configuration conf) throws IOException {
-    return WALFactory.createReader(fs, ((FSWALInfo)path).getPath(), conf);
+  protected Reader createReader(WALIdentity path, Configuration conf) throws IOException {
+    return WALFactory.createReader(fs, ((FSWALIdentity)path).getPath(), conf);
   }
 
 }

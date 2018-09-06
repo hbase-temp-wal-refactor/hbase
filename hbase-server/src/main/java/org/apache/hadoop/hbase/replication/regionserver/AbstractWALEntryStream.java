@@ -26,7 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WAL.Reader;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Streaming access to WAL entries. This class is given a queue of WAL {@link WALInfo}, and continually
+ * Streaming access to WAL entries. This class is given a queue of WAL {@link WALIdentity}, and continually
  * iterates through all the WAL {@link Entry} in the queue. When it's done reading from an Entry, it
  * dequeues and starts reading from the next Entry.
  */
@@ -44,7 +44,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
   private static final Logger LOG = LoggerFactory.getLogger(AbstractWALEntryStream.class);
 
   protected Reader reader;
-  protected WALInfo currentPath;
+  protected WALIdentity currentPath;
   // cache of next entry for hasNext()
   protected Entry currentEntry;
   // position for the current entry. As now we support peek, which means that the upper layer may
@@ -53,7 +53,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
   protected long currentPositionOfEntry = 0;
   // position after reading current entry
   protected long currentPositionOfReader = 0;
-  protected final PriorityBlockingQueue<WALInfo> logQueue;
+  protected final PriorityBlockingQueue<WALIdentity> logQueue;
   protected final Configuration conf;
   protected final WALFileSizeProvider walFileSizeProvider;
   // which region server the WALs belong to
@@ -71,7 +71,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
    * @param metrics replication metrics
    * @throws IOException
    */
-  public AbstractWALEntryStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
+  public AbstractWALEntryStream(PriorityBlockingQueue<WALIdentity> logQueue, Configuration conf,
       long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
       MetricsSource metrics) throws IOException {
     this.logQueue = logQueue;
@@ -123,7 +123,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
   }
 
   @Override
-  public WALInfo getCurrentWalInfo() {
+  public WALIdentity getCurrentWALIdentity() {
     return currentPath;
   }
 
@@ -139,7 +139,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
     currentPositionOfEntry = position;
   }
 
-  private void setCurrentPath(WALInfo path) {
+  private void setCurrentPath(WALIdentity path) {
     this.currentPath = path;
   }
 
@@ -223,7 +223,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
 
   // open a reader on the next log in queue
   private boolean openNextLog() throws IOException {
-    WALInfo nextPath = logQueue.peek();
+    WALIdentity nextPath = logQueue.peek();
     if (nextPath != null) {
       openReader(nextPath);
       if (reader != null) {
@@ -238,11 +238,11 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
   }
 
 
-  protected void openReader(WALInfo path) throws IOException {
+  protected void openReader(WALIdentity path) throws IOException {
     try {
       // Detect if this is a new file, if so get a new reader else
       // reset the current reader so that we see the new data
-      if (reader == null || !getCurrentWalInfo().equals(path)) {
+      if (reader == null || !getCurrentWALIdentity().equals(path)) {
         closeReader();
         reader = createReader(path, conf);
         seek();
@@ -267,12 +267,12 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
   /**
    * Creates a reader for a wal info
    * 
-   * @param walInfo path for FS based or stream name for stream based wal provider
+   * @param WALIdentity path for FS based or stream name for stream based wal provider
    * @param conf 
    * @return return a reader for the file
    * @throws IOException
    */
-  protected abstract Reader createReader(WALInfo walInfo, Configuration conf) throws IOException;
+  protected abstract Reader createReader(WALIdentity WALIdentity, Configuration conf) throws IOException;
 
   protected void resetReader() throws IOException {
     try {
@@ -288,11 +288,11 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
 
   /**
    * Implement for handling IO exceptions , throw back if doesn't need to be handled 
-   * @param walInfo
+   * @param WALIdentity
    * @param ioe IOException
    * @throws IOException
    */
-  protected abstract void handleIOException(WALInfo walInfo, IOException e) throws IOException;
+  protected abstract void handleIOException(WALIdentity WALIdentity, IOException e) throws IOException;
 
   protected void seek() throws IOException {
     if (currentPositionOfEntry != 0) {

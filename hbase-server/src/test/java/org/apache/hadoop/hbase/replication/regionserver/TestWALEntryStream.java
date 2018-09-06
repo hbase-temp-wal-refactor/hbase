@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.HBaseClassTestRule;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
@@ -56,12 +55,12 @@ import org.apache.hadoop.hbase.replication.WALEntryFilter;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
 import org.apache.hadoop.hbase.testclassification.ReplicationTests;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.hbase.wal.FSWALInfo;
+import org.apache.hadoop.hbase.wal.FSWALIdentity;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WALEdit;
 import org.apache.hadoop.hbase.wal.WALFactory;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.hadoop.hbase.wal.WALKeyImpl;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.junit.After;
@@ -100,7 +99,7 @@ public class TestWALEntryStream {
   }
 
   private WAL log;
-  PriorityBlockingQueue<WALInfo> walQueue;
+  PriorityBlockingQueue<WALIdentity> walQueue;
   private PathWatcher pathWatcher;
 
   @Rule
@@ -374,7 +373,7 @@ public class TestWALEntryStream {
     }
 
     // start up a reader
-    WALInfo walPath = walQueue.peek();
+    WALIdentity walPath = walQueue.peek();
     ReplicationSourceWALReader reader = createReader(false, CONF);
     WALEntryBatch entryBatch = reader.take();
 
@@ -394,7 +393,7 @@ public class TestWALEntryStream {
   @Test
   public void testReplicationSourceWALReaderRecovered() throws Exception {
     appendEntriesToLogAndSync(10);
-    WALInfo walPath = walQueue.peek();
+    WALIdentity walPath = walQueue.peek();
     log.rollWriter(false);
     appendEntriesToLogAndSync(5);
     log.shutdown();
@@ -427,14 +426,14 @@ public class TestWALEntryStream {
   @Test
   public void testReplicationSourceWALReaderWrongPosition() throws Exception {
     appendEntriesToLogAndSync(1);
-    WALInfo walPath = walQueue.peek();
+    WALIdentity walPath = walQueue.peek();
     log.rollWriter(false);
     appendEntriesToLogAndSync(20);
     TEST_UTIL.waitFor(5000, new ExplainingPredicate<Exception>() {
 
       @Override
       public boolean evaluate() throws Exception {
-        return fs.getFileStatus(((FSWALInfo)walPath).getPath()).getLen() > 0;
+        return fs.getFileStatus(((FSWALIdentity)walPath).getPath()).getLen() > 0;
       }
 
       @Override
@@ -443,7 +442,7 @@ public class TestWALEntryStream {
       }
 
     });
-    long walLength = fs.getFileStatus(((FSWALInfo)walPath).getPath()).getLen();
+    long walLength = fs.getFileStatus(((FSWALIdentity)walPath).getPath()).getLen();
 
     ReplicationSourceWALReader reader = createReader(false, CONF);
 
@@ -454,7 +453,7 @@ public class TestWALEntryStream {
     assertEquals(1, entryBatch.getNbEntries());
     assertTrue(entryBatch.isEndOfFile());
 
-    WALInfo walPath2 = walQueue.peek();
+    WALIdentity walPath2 = walQueue.peek();
     entryBatch = reader.take();
     assertEquals(walPath2, entryBatch.getLastWalPath());
     assertEquals(20, entryBatch.getNbEntries());
@@ -467,7 +466,7 @@ public class TestWALEntryStream {
     assertEquals(0, entryBatch.getNbEntries());
     assertTrue(entryBatch.isEndOfFile());
 
-    WALInfo walPath3 = walQueue.peek();
+    WALIdentity walPath3 = walQueue.peek();
     entryBatch = reader.take();
     assertEquals(walPath3, entryBatch.getLastWalPath());
     assertEquals(10, entryBatch.getNbEntries());
@@ -489,7 +488,7 @@ public class TestWALEntryStream {
     }
 
     // start up a reader
-    WALInfo walPath = walQueue.peek();
+    WALIdentity walPath = walQueue.peek();
     ReplicationSource source = mockReplicationSource(false, CONF);
     AtomicInteger invokeCount = new AtomicInteger(0);
     AtomicBoolean enabled = new AtomicBoolean(false);
@@ -582,10 +581,10 @@ public class TestWALEntryStream {
 
   class PathWatcher implements WALActionsListener {
 
-    WALInfo currentPath;
+    WALIdentity currentPath;
 
     @Override
-    public void preLogRoll(WALInfo oldPath, WALInfo newPath) throws IOException {
+    public void preLogRoll(WALIdentity oldPath, WALIdentity newPath) throws IOException {
       walQueue.add(newPath);
       currentPath = newPath;
     }

@@ -23,7 +23,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.replication.ReplicationException;
 import org.apache.hadoop.hbase.replication.ReplicationQueueStorage;
 import org.apache.hadoop.hbase.util.Threads;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +40,7 @@ public class RecoveredReplicationSourceShipper extends ReplicationSourceShipper 
   private final ReplicationQueueStorage replicationQueues;
 
   public RecoveredReplicationSourceShipper(Configuration conf, String walGroupId,
-      PriorityBlockingQueue<WALInfo> queue, RecoveredReplicationSource source,
+      PriorityBlockingQueue<WALIdentity> queue, RecoveredReplicationSource source,
       ReplicationQueueStorage queueStorage) {
     super(conf, walGroupId, queue, source);
     this.source = source;
@@ -58,7 +58,7 @@ public class RecoveredReplicationSourceShipper extends ReplicationSourceShipper 
     int numRetries = 0;
     while (numRetries <= maxRetriesMultiplier) {
       try {
-        source.locateRecoveredWALInfos(queue);
+        source.locateRecoveredWALIdentities(queue);
         break;
       } catch (IOException e) {
         LOG.error("Error while locating recovered queue paths, attempt #" + numRetries);

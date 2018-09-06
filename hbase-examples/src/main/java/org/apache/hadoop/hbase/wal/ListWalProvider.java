@@ -30,12 +30,12 @@ import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.regionserver.wal.ListWal;
 import org.apache.hadoop.hbase.regionserver.wal.WALActionsListener;
-import org.apache.hadoop.hbase.regionserver.wal.WalInfoImpl;
+import org.apache.hadoop.hbase.regionserver.wal.WALIdentityImpl;
 import org.apache.hadoop.hbase.replication.regionserver.AbstractWALEntryStream;
 import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
 import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
 import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
-import org.apache.hadoop.hbase.replication.regionserver.WALFileLengthProvider;
+import org.apache.hadoop.hbase.replication.regionserver.WALFileSizeProvider;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WAL.Reader;
 import org.apache.yetus.audience.InterfaceAudience;
@@ -156,20 +156,20 @@ public class ListWalProvider implements WALProvider {
   }
 
   @Override
-  public WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
-      long startPosition, WALFileLengthProvider walFileLengthProvider, ServerName serverName,
+  public WALEntryStream getWalStream(PriorityBlockingQueue<WALIdentity> logQueue, Configuration conf,
+      long startPosition, WALFileSizeProvider walFileLengthProvider, ServerName serverName,
       MetricsSource metrics) throws IOException {
     return new AbstractWALEntryStream(logQueue, conf, startPosition, walFileLengthProvider,
         serverName, metrics) {
 
       @Override
-      protected void handleIOException(WALInfo walInfo, IOException e) throws IOException {
+      protected void handleIOException(WALIdentity WALIdentity, IOException e) throws IOException {
         throw e;
       }
 
       @Override
-      protected Reader createReader(WALInfo walInfo, Configuration conf) throws IOException {
-        return listWalMetaDataProvider.createReader(walInfo);
+      protected Reader createReader(WALIdentity WALIdentity, Configuration conf) throws IOException {
+        return listWalMetaDataProvider.createReader(WALIdentity);
       }
     };
   }
@@ -180,25 +180,25 @@ public class ListWalProvider implements WALProvider {
   }
 
   public class ListWalMetaDataProvider implements WALMetaDataProvider {
-    ConcurrentHashMap<WALInfo, List<Entry>> map = new ConcurrentHashMap<WALInfo, List<Entry>>();
+    ConcurrentHashMap<WALIdentity, List<Entry>> map = new ConcurrentHashMap<WALIdentity, List<Entry>>();
 
     @Override
     public boolean exists(String log) throws IOException {
-      return map.containsKey(new WalInfoImpl(log));
+      return map.containsKey(new WALIdentityImpl(log));
     }
 
-    public Reader createReader(WALInfo walInfo) {
-      return new ListWal.ListReader(walInfo, this);
+    public Reader createReader(WALIdentity WALIdentity) {
+      return new ListWal.ListReader(WALIdentity, this);
     }
 
     @Override
-    public WALInfo[] list(WALInfo walInfo) throws IOException {
-      WALInfo[] walInfos = new WALInfo[1];
-      walInfos[0] = walInfo;
-      return walInfos;
+    public WALIdentity[] list(WALIdentity WALIdentity) throws IOException {
+      WALIdentity[] WALIdentitys = new WALIdentity[1];
+      WALIdentitys[0] = WALIdentity;
+      return WALIdentitys;
     }
 
-    public List<Entry> createList(WALInfo info) {
+    public List<Entry> createList(WALIdentity info) {
       List<Entry> list = map.putIfAbsent(info, new ArrayList<Entry>());
       if (list == null) {
         return map.get(info);
@@ -214,22 +214,23 @@ public class ListWalProvider implements WALProvider {
       return map.keySet().size();
     }
 
-    public List<Entry> get(WALInfo walInfo) {
-      return map.get(walInfo);
+    public List<Entry> get(WALIdentity WALIdentity) {
+      return map.get(WALIdentity);
     }
 
   }
 
   @Override
-  public WALInfo createWalInfo(String wal) {
-    return new WalInfoImpl(wal);
+  public WALIdentity createWALIdentity(String wal) {
+    return new WALIdentityImpl(wal);
   }
 
   @Override
   public RecoveredReplicationSource getRecoveredReplicationSource() {
     return new RecoveredReplicationSource() {
       @Override
-      public void locateRecoveredWALInfos(PriorityBlockingQueue<WALInfo> queue) throws IOException {
+      public void locateRecoveredWALIdentities(PriorityBlockingQueue<WALIdentity> queue)
+          throws IOException {
 
       }
     };

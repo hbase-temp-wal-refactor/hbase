@@ -25,7 +25,7 @@ import org.apache.hadoop.hbase.Server;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.replication.ReplicationPeer;
 import org.apache.hadoop.hbase.replication.ReplicationQueueStorage;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.hadoop.hbase.wal.WALProvider;
 import org.apache.yetus.audience.InterfaceAudience;
 
@@ -50,7 +50,7 @@ public abstract class RecoveredReplicationSource extends ReplicationSource {
 
   @Override
   protected RecoveredReplicationSourceShipper createNewShipper(String walGroupId,
-      PriorityBlockingQueue<WALInfo> queue) {
+      PriorityBlockingQueue<WALIdentity> queue) {
     return new RecoveredReplicationSourceShipper(conf, walGroupId, queue, this, queueStorage);
   }
 
@@ -79,9 +79,9 @@ public abstract class RecoveredReplicationSource extends ReplicationSource {
 
   /**
    * Get the updated queue of the wals if the wals are moved to another location.
-   * @param queue Updated queue with the new WalInfo(paths or stream) if wals are archived 
+   * @param queue Updated queue with the new WALIdentity(paths or stream) if wals are archived 
    * @throws IOException
    */
-  public abstract void locateRecoveredWALInfos(PriorityBlockingQueue<WALInfo> queue)
+  public abstract void locateRecoveredWALIdentities(PriorityBlockingQueue<WALIdentity> queue)
       throws IOException;
 }

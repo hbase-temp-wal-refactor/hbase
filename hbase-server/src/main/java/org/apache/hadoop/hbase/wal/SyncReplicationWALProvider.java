@@ -367,7 +367,7 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
   }
 
   @Override
-  public WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
+  public WALEntryStream getWalStream(PriorityBlockingQueue<WALIdentity> logQueue, Configuration conf,
                                      long startPosition, WALFileSizeProvider walFileSizeProvider,
                                      ServerName serverName, MetricsSource metrics)
                                          throws IOException {
@@ -381,8 +381,8 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
   }
 
   @Override
-  public WALInfo createWalInfo(String wal) {
-    return new FSWALInfo(wal);
+  public WALIdentity createWALIdentity(String wal) {
+    return new FSWALIdentity(wal);
   }
 
   @Override
@@ -390,13 +390,13 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
     return new FSRecoveredReplicationSource();
   }
   
-  public WALInfo getWalFromArchivePath(String wal) {
-    return new FSWALInfo(new Path(oldLogDir, wal));
+  public WALIdentity getWalFromArchivePath(String wal) {
+    return new FSWALIdentity(new Path(oldLogDir, wal));
   }
 
-  public WALInfo getFullPath(ServerName serverName, String wal) {
+  public WALIdentity getFullPath(ServerName serverName, String wal) {
     Path walWithServerName = new Path(getWALDirectoryName(serverName.toString()), wal);
-    return new FSWALInfo(new Path(walRootDir,walWithServerName));
+    return new FSWALIdentity(new Path(walRootDir,walWithServerName));
   }
 
 }

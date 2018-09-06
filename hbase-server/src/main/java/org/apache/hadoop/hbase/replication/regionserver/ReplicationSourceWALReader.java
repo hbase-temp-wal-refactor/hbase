@@ -34,7 +34,7 @@ import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.Threads;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WALEdit;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.hadoop.hbase.wal.WALKey;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
@@ -53,7 +53,7 @@ import org.apache.hadoop.hbase.shaded.protobuf.generated.WALProtos.StoreDescript
 class ReplicationSourceWALReader extends Thread {
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationSourceWALReader.class);
 
-  private final PriorityBlockingQueue<WALInfo> logQueue;
+  private final PriorityBlockingQueue<WALIdentity> logQueue;
   private final Configuration conf;
   private final WALEntryFilter filter;
   private final ReplicationSource source;
@@ -85,7 +85,7 @@ class ReplicationSourceWALReader extends Thread {
    * @param source replication source
    */
   public ReplicationSourceWALReader(Configuration conf,
-      PriorityBlockingQueue<WALInfo> logQueue, long startPosition, WALEntryFilter filter,
+      PriorityBlockingQueue<WALIdentity> logQueue, long startPosition, WALEntryFilter filter,
       ReplicationSource source) {
     this.logQueue = logQueue;
     this.currentPosition = startPosition;
@@ -171,14 +171,14 @@ class ReplicationSourceWALReader extends Thread {
       batch.getNbEntries() >= replicationBatchCountCapacity;
   }
 
-  protected static final boolean switched(WALEntryStream entryStream, WALInfo path) {
-    WALInfo newPath = entryStream.getCurrentWalInfo();
+  protected static final boolean switched(WALEntryStream entryStream, WALIdentity path) {
+    WALIdentity newPath = entryStream.getCurrentWALIdentity();
     return newPath == null || !path.getName().equals(newPath.getName());
   }
 
   protected WALEntryBatch readWALEntries(WALEntryStream entryStream)
       throws IOException, InterruptedException {
-    WALInfo currentPath = entryStream.getCurrentWalInfo();
+    WALIdentity currentPath = entryStream.getCurrentWALIdentity();
     if (!entryStream.hasNext()) {
       // check whether we have switched a file
       if (currentPath != null && switched(entryStream, currentPath)) {
@@ -193,7 +193,7 @@ class ReplicationSourceWALReader extends Thread {
       }
     } else {
       // when reading from the entry stream first time we will enter here
-      currentPath = entryStream.getCurrentWalInfo();
+      currentPath = entryStream.getCurrentWALIdentity();
     }
     WALEntryBatch batch = createBatch(entryStream);
     for (;;) {
@@ -232,7 +232,7 @@ class ReplicationSourceWALReader extends Thread {
   }
 
 
-  public WALInfo getCurrentPath() {
+  public WALIdentity getCurrentPath() {
     // if we've read some WAL entries, get the Path we read from
     WALEntryBatch batchQueueHead = entryBatchQueue.peek();
     if (batchQueueHead != null) {
@@ -253,7 +253,7 @@ class ReplicationSourceWALReader extends Thread {
   }
 
   protected final WALEntryBatch createBatch(WALEntryStream entryStream) {
-    return new WALEntryBatch(replicationBatchCountCapacity, entryStream.getCurrentWalInfo());
+    return new WALEntryBatch(replicationBatchCountCapacity, entryStream.getCurrentWALIdentity());
   }
 
   protected final Entry filterEntry(Entry entry) {

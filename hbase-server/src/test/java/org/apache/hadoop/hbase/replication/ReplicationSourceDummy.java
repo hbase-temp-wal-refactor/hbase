@@ -32,7 +32,7 @@ import org.apache.hadoop.hbase.replication.regionserver.ReplicationSourceManager
 import org.apache.hadoop.hbase.replication.regionserver.WALFileSizeProvider;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.hadoop.hbase.wal.WALProvider;
 
 /**
@@ -43,7 +43,7 @@ public class ReplicationSourceDummy implements ReplicationSourceInterface {
   private ReplicationSourceManager manager;
   private ReplicationPeer replicationPeer;
   private String peerClusterId;
-  private WALInfo currentWALInfo;
+  private WALIdentity currentWALIdentity;
   private MetricsSource metrics;
   private WALFileSizeProvider walFileSizeProvider;
   private AtomicBoolean startup = new AtomicBoolean(false);
@@ -61,14 +61,14 @@ public class ReplicationSourceDummy implements ReplicationSourceInterface {
   }
 
   @Override
-  public void enqueueLog(WALInfo log) {
-    this.currentWALInfo = log;
+  public void enqueueLog(WALIdentity log) {
+    this.currentWALIdentity = log;
     metrics.incrSizeOfLogQueue();
   }
 
   @Override
-  public WALInfo getCurrentWALInfo() {
-    return this.currentWALInfo;
+  public WALIdentity getCurrentWALIdentity() {
+    return this.currentWALIdentity;
   }
 
   @Override

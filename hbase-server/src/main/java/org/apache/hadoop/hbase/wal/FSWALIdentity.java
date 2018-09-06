@@ -26,20 +26,20 @@ import org.apache.yetus.audience.InterfaceStability;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public class FSWALInfo implements WALInfo{
+public class FSWALIdentity implements WALIdentity{
   private static final Pattern WAL_FILE_NAME_PATTERN =
       Pattern.compile("(.+)\\.(\\d+)(\\.[0-9A-Za-z]+)?");
   private String name;
   private Path path;
 
-  public FSWALInfo(String name) {
+  public FSWALIdentity(String name) {
     this.path = new Path(name);
     if (path != null) {
       this.name = path.getName();
     }
   }
   
-  public FSWALInfo(Path path) {
+  public FSWALIdentity(Path path) {
     this.path = path;
     if(path !=null){
       this.name = path.getName();
@@ -67,20 +67,20 @@ public class FSWALInfo implements WALInfo{
 
   @Override
   public long getSize() throws IOException {
-    // TODO Implement WALInfo.getSize
+    // TODO Implement WALIdentity.getSize
     return -1;
   }
 
   /**
-   * @return {@link Path} object of the name encapsulated in WalInfo
+   * @return {@link Path} object of the name encapsulated in WALIdentity
    */
   public Path getPath() {
     return path;
   }
 
   @Override
-  public int compareTo(WALInfo o) {
-    FSWALInfo that = (FSWALInfo)o;
+  public int compareTo(WALIdentity o) {
+    FSWALIdentity that = (FSWALIdentity)o;
     return this.path.compareTo(that.getPath());
   }
   
@@ -91,10 +91,10 @@ public class FSWALInfo implements WALInfo{
   
   @Override
   public boolean equals(Object obj) {
-    if (!(obj instanceof FSWALInfo)) {
+    if (!(obj instanceof FSWALIdentity)) {
       return false;
     }
-    FSWALInfo that = (FSWALInfo) obj;
+    FSWALIdentity that = (FSWALIdentity) obj;
     return this.path.equals(that.getPath());
   }
   @Override

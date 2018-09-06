@@ -17,14 +17,14 @@
  */
 package org.apache.hadoop.hbase.replication.regionserver;
 
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.yetus.audience.InterfaceAudience;
 
 @InterfaceAudience.Private
 public final class ReplicationStatus {
   private final String peerId;
   private final String walGroup;
-  private final WALInfo currentPath;
+  private final WALIdentity currentPath;
   private final int queueSize;
   private final long ageOfLastShippedOp;
   private final long replicationDelay;
@@ -70,7 +70,7 @@ public final class ReplicationStatus {
     return replicationDelay;
   }
 
-  public WALInfo getCurrentPath() {
+  public WALIdentity getCurrentPath() {
     return currentPath;
   }
 
@@ -81,7 +81,7 @@ public final class ReplicationStatus {
   public static class ReplicationStatusBuilder {
     private String peerId = "UNKNOWN";
     private String walGroup = "UNKNOWN";
-    private WALInfo currentPath =  WALInfo.UNKNOWN;
+    private WALIdentity currentPath =  WALIdentity.UNKNOWN;
     private int queueSize = -1;
     private long ageOfLastShippedOp = -1;
     private long replicationDelay = -1;
@@ -103,7 +103,7 @@ public final class ReplicationStatus {
       return this;
     }
 
-    public ReplicationStatusBuilder withCurrentPath(WALInfo currentPath) {
+    public ReplicationStatusBuilder withCurrentPath(WALIdentity currentPath) {
       this.currentPath = currentPath;
       return this;
     }

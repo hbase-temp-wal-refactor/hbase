@@ -39,7 +39,7 @@ import org.apache.hadoop.hbase.regionserver.MultiVersionConcurrencyControl.Write
 import org.apache.hadoop.hbase.wal.ListWalProvider.ListWalMetaDataProvider;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALEdit;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.hadoop.hbase.wal.WALKeyImpl;
 import org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting;
 import org.apache.yetus.audience.InterfaceAudience;
@@ -82,8 +82,8 @@ public class ListWal implements WAL {
   }
 
   @Override
-  public OptionalLong getLogFileSizeIfBeingWritten(WALInfo walInfo) {
-    return OptionalLong.of(metaDataProvider.get(walInfo).size());
+  public OptionalLong getLogFileSizeIfBeingWritten(WALIdentity WALIdentity) {
+    return OptionalLong.of(metaDataProvider.get(WALIdentity).size());
   }
 
   @Override
@@ -91,15 +91,15 @@ public class ListWal implements WAL {
     if (this.closed) {
       throw new WALClosedException("WAL has been closed");
     }
-    WALInfo oldPath = getOldPath();
-    WALInfo newPath = getNewPath();
+    WALIdentity oldPath = getOldPath();
+    WALIdentity newPath = getNewPath();
     tellListenersAboutPreLogRoll(oldPath, newPath);
     activeWal = createWal(newPath);
     tellListenersAboutPostLogRoll(oldPath, newPath);
     return null;
   }
 
-  List<Entry> createWal(WALInfo newPath) {
+  List<Entry> createWal(WALIdentity newPath) {
     return metaDataProvider.createList(newPath);
   }
 
@@ -220,31 +220,31 @@ public class ListWal implements WAL {
   /**
    * This is a convenience method that computes a new filename with a given file-number.
    * @param filenum to use
-   * @return WALInfo
+   * @return WALIdentity
    */
-  protected WALInfo computeLogName(final long filenum) {
+  protected WALIdentity computeLogName(final long filenum) {
     if (filenum < 0) {
       throw new RuntimeException("WAL file number can't be < 0");
     }
     String child = walFilePrefix + WAL_FILE_NAME_DELIMITER + filenum + walFileSuffix;
-    return new WalInfoImpl(child);
+    return new WALIdentityImpl(child);
   }
 
   /**
    * This is a convenience method that computes a new filename with a given using the current WAL
    * file-number
-   * @return WALInfo
+   * @return WALIdentity
    */
-  public WALInfo getCurrentFileName() {
+  public WALIdentity getCurrentFileName() {
     return computeLogName(this.filenum.get());
   }
 
   /**
    * retrieve the next path to use for writing. Increments the internal filenum.
    */
-  private WALInfo getNewPath() throws IOException {
+  private WALIdentity getNewPath() throws IOException {
     this.filenum.set(System.currentTimeMillis());
-    WALInfo newPath = getCurrentFileName();
+    WALIdentity newPath = getCurrentFileName();
     while (metaDataProvider.exists(newPath.getName())) {
       this.filenum.incrementAndGet();
       newPath = getCurrentFileName();
@@ -253,9 +253,9 @@ public class ListWal implements WAL {
   }
 
   @VisibleForTesting
-  WALInfo getOldPath() {
+  WALIdentity getOldPath() {
     long currentFilenum = this.filenum.get();
-    WALInfo oldPath = null;
+    WALIdentity oldPath = null;
     if (currentFilenum > 0) {
       // ComputeFilename will take care of meta wal filename
       oldPath = computeLogName(currentFilenum);
@@ -266,7 +266,7 @@ public class ListWal implements WAL {
   /**
    * Tell listeners about post log roll.
    */
-  private void tellListenersAboutPostLogRoll(final WALInfo oldPath, final WALInfo newPath)
+  private void tellListenersAboutPostLogRoll(final WALIdentity oldPath, final WALIdentity newPath)
       throws IOException {
     if (!this.listeners.isEmpty()) {
       for (WALActionsListener i : this.listeners) {
@@ -279,7 +279,7 @@ public class ListWal implements WAL {
   /**
    * Tell listeners about pre log roll.
    */
-  private void tellListenersAboutPreLogRoll(final WALInfo oldPath, final WALInfo newPath)
+  private void tellListenersAboutPreLogRoll(final WALIdentity oldPath, final WALIdentity newPath)
       throws IOException {
     coprocessorHost.preWALRoll(oldPath, newPath);
 
@@ -303,7 +303,7 @@ public class ListWal implements WAL {
     private List<Entry> list;
     int count = 0;
 
-    public ListReader(WALInfo info, ListWalMetaDataProvider metaDataProvider) {
+    public ListReader(WALIdentity info, ListWalMetaDataProvider metaDataProvider) {
       list = metaDataProvider.get(info);
     }
 

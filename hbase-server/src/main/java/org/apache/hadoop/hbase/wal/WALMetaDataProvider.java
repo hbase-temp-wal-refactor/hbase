@@ -40,10 +40,10 @@ public interface WALMetaDataProvider {
   boolean exists(String log) throws IOException;
 
   /**
-   * @param walInfo it could be a namespace for a Stream or directory/path for a FS based storage
+   * @param WALIdentity it could be a namespace for a Stream or directory/path for a FS based storage
    * @return
    * @throws IOException
    */
-  WALInfo[] list(WALInfo walInfo) throws IOException;
+  WALIdentity[] list(WALIdentity WALIdentity) throws IOException;
 
 }

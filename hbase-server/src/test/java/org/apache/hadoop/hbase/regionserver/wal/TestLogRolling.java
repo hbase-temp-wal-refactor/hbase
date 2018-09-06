@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.HBaseClassTestRule;
 import org.apache.hadoop.hbase.HConstants;
@@ -52,10 +51,10 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.JVMClusterUtil;
 import org.apache.hadoop.hbase.wal.AbstractFSWALProvider;
-import org.apache.hadoop.hbase.wal.FSWALInfo;
+import org.apache.hadoop.hbase.wal.FSWALIdentity;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALFactory;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.junit.BeforeClass;
@@ -253,20 +252,20 @@ public class TestLogRolling extends AbstractTestLogRolling {
       server = TEST_UTIL.getRSForFirstRegionInTable(desc.getTableName());
       RegionInfo region = server.getRegions(desc.getTableName()).get(0).getRegionInfo();
       final WAL log = server.getWAL(region);
-      final List<WALInfo> paths = new ArrayList<>(1);
+      final List<WALIdentity> paths = new ArrayList<>(1);
       final List<Integer> preLogRolledCalled = new ArrayList<>();
 
-      paths.add(new FSWALInfo(AbstractFSWALProvider.getCurrentFileName(log)));
+      paths.add(new FSWALIdentity(AbstractFSWALProvider.getCurrentFileName(log)));
       log.registerWALActionsListener(new WALActionsListener() {
 
         @Override
-        public void preLogRoll(WALInfo oldFile, WALInfo newFile) {
+        public void preLogRoll(WALIdentity oldFile, WALIdentity newFile) {
           LOG.debug("preLogRoll: oldFile=" + oldFile + " newFile=" + newFile);
           preLogRolledCalled.add(new Integer(1));
         }
 
         @Override
-        public void postLogRoll(WALInfo oldFile, WALInfo newFile) {
+        public void postLogRoll(WALIdentity oldFile, WALIdentity newFile) {
           paths.add(newFile);
         }
       });
@@ -317,8 +316,8 @@ public class TestLogRolling extends AbstractTestLogRolling {
       // read back the data written
       Set<String> loggedRows = new HashSet<>();
       FSUtils fsUtils = FSUtils.getInstance(fs, TEST_UTIL.getConfiguration());
-      for (WALInfo wi : paths) {
-        FSWALInfo p = (FSWALInfo)wi;
+      for (WALIdentity wi : paths) {
+        FSWALIdentity p = (FSWALIdentity)wi;
         LOG.debug("recovering lease for " + p);
         fsUtils.recoverFileLease(((HFileSystem) fs).getBackingFs(), p.getPath(), TEST_UTIL.getConfiguration(),
           null);

@@ -2,7 +2,7 @@ package org.apache.hadoop.hbase.replication.regionserver;
 
 import java.io.Closeable;
 import java.io.IOException;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
@@ -43,9 +43,9 @@ public interface WALEntryStream extends Closeable {
   public long getPosition();
 
   /**
-   * @return the {@link WALInfo} of the current WAL
+   * @return the {@link WALIdentity} of the current WAL
    */
-  public WALInfo getCurrentWalInfo();
+  public WALIdentity getCurrentWALIdentity();
 
   /**
    * Should be called if the stream is to be reused (i.e. used again after hasNext() has returned

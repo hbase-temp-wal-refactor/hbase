@@ -35,7 +35,7 @@ import org.apache.hadoop.hbase.coprocessor.WALObserver;
 import org.apache.hadoop.hbase.metrics.MetricRegistry;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALEdit;
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.hadoop.hbase.wal.WALKey;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
@@ -174,7 +174,7 @@ public class WALCoprocessorHost
    * @param oldPath the path of the current wal that we are replacing
    * @param newPath the path of the wal we are going to create
    */
-  public void preWALRoll(WALInfo oldPath, WALInfo newPath) throws IOException {
+  public void preWALRoll(WALIdentity oldPath, WALIdentity newPath) throws IOException {
     execOperation(coprocEnvironments.isEmpty() ? null : new WALObserverOperation() {
       @Override
       protected void call(WALObserver observer) throws IOException {
@@ -188,7 +188,7 @@ public class WALCoprocessorHost
    * @param oldPath the path of the wal that we replaced
    * @param newPath the path of the wal we have created and now is the current
    */
-  public void postWALRoll(WALInfo oldPath, WALInfo newPath) throws IOException {
+  public void postWALRoll(WALIdentity oldPath, WALIdentity newPath) throws IOException {
     execOperation(coprocEnvironments.isEmpty() ? null : new WALObserverOperation() {
       @Override
       protected void call(WALObserver observer) throws IOException {

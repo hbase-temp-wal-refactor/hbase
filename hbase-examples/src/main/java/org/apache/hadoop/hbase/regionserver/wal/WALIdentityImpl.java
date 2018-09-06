@@ -19,22 +19,22 @@ package org.apache.hadoop.hbase.regionserver.wal;
 
 import java.io.IOException;
 
-import org.apache.hadoop.hbase.wal.WALInfo;
+import org.apache.hadoop.hbase.wal.WALIdentity;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public class WalInfoImpl implements WALInfo {
+public class WALIdentityImpl implements WALIdentity {
 
   private String name;
   
-  public WalInfoImpl(String name) {
+  public WALIdentityImpl(String name) {
     this.name=name;
   }
 
   @Override
-  public int compareTo(WALInfo o) {
+  public int compareTo(WALIdentity o) {
     return this.getName().compareTo(o.getName());
   }
 
@@ -45,21 +45,21 @@ public class WalInfoImpl implements WALInfo {
 
   @Override
   public long getWalStartTime() {
-    // TODO Implement WALInfo.getWalStartTime
+    // TODO Implement WALIdentity.getWalStartTime
     return 0;
   }
 
   @Override
   public long getSize() throws IOException {
-    // TODO Implement WALInfo.getSize
+    // TODO Implement WALIdentity.getSize
     return 0;
   }
 
   @Override
   public boolean equals(Object obj) {
     if (obj == null) return false;
-    if (obj instanceof WALInfo) {
-      WALInfo info = (WALInfo) obj;
+    if (obj instanceof WALIdentity) {
+      WALIdentity info = (WALIdentity) obj;
       if (this.name.equals(info.getName())) return true;
     }
     return false;

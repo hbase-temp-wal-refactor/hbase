@@ -17,8 +17,6 @@
  */
 package org.apache.hadoop.hbase.wal;
 
-import static org.apache.hadoop.hbase.wal.AbstractFSWALProvider.getWALDirectoryName;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -140,14 +138,14 @@ class DisabledWALProvider implements WALProvider {
         }
         for (WALActionsListener listener : listeners) {
           try {
-            listener.preLogRoll(new FSWALInfo(path), new FSWALInfo(path));
+            listener.preLogRoll(new FSWALIdentity(path), new FSWALIdentity(path));
           } catch (IOException exception) {
             LOG.debug("Ignoring exception from listener.", exception);
           }
         }
         for (WALActionsListener listener : listeners) {
           try {
-            listener.postLogRoll(new FSWALInfo(path), new FSWALInfo(path));
+            listener.postLogRoll(new FSWALIdentity(path), new FSWALIdentity(path));
           } catch (IOException exception) {
             LOG.debug("Ignoring exception from listener.", exception);
           }
@@ -255,7 +253,7 @@ class DisabledWALProvider implements WALProvider {
     }
 
     @Override
-    public OptionalLong getLogFileSizeIfBeingWritten(WALInfo path) {
+    public OptionalLong getLogFileSizeIfBeingWritten(WALIdentity path) {
       return OptionalLong.empty();
     }
   }
@@ -276,7 +274,7 @@ class DisabledWALProvider implements WALProvider {
   }
 
   @Override
-  public WALEntryStream getWalStream(PriorityBlockingQueue<WALInfo> logQueue, Configuration conf,
+  public WALEntryStream getWalStream(PriorityBlockingQueue<WALIdentity> logQueue, Configuration conf,
       long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
       MetricsSource metrics) throws IOException {
     return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
@@ -289,8 +287,8 @@ class DisabledWALProvider implements WALProvider {
   }
 
   @Override
-  public WALInfo createWalInfo(String wal) {
-    return new FSWALInfo(wal);
+  public WALIdentity createWALIdentity(String wal) {
+    return new FSWALIdentity(wal);
   }
   
   @Override
