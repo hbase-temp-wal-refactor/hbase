@@ -35,8 +35,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Streaming access to WAL entries. This class is given a queue of WAL {@link WALInfo}, and continually
- * iterates through all the WAL {@link Entry} in the queue. When it's done reading from a Path, it
- * dequeues it and starts reading from the next.
+ * iterates through all the WAL {@link Entry} in the queue. When it's done reading from an Entry, it
+ * dequeues and starts reading from the next Entry.
  */
 @InterfaceAudience.Private
 @InterfaceStability.Evolving

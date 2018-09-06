@@ -23,6 +23,10 @@ import org.apache.yetus.audience.InterfaceStability;
 
 /**
  * MetaData provider for the given WAL implementation
+ *
+ * It provides facilities that
+ *   check existence of certain WAL
+ *   retrieve WAL entities under given namespace
  */
 @InterfaceAudience.Private
 @InterfaceStability.Evolving

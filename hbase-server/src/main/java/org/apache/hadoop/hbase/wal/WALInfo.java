@@ -18,12 +18,13 @@
 package org.apache.hadoop.hbase.wal;
 
 import java.io.IOException;
-import org.apache.hadoop.fs.Path;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
 
 /**
- * 
+ * This interface defines the identification of WAL for both stream based and distributed FileSystem
+ * based environment.
+ * See {@link getName} method.
  */
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
@@ -53,8 +54,8 @@ public interface WALInfo extends Comparable<WALInfo> {
   };
 
   /**
-   * For the FS based path, it will be just a file name of whole path
-   * For stream based, it will be name of the stream 
+   * For the FS based path, it will be just a filename of whole path
+   * For stream based, it will be name of the stream
    * @return name of the wal
    */
   String getName();
