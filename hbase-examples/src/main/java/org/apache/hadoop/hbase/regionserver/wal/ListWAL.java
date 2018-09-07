@@ -36,7 +36,7 @@ import org.apache.hadoop.hbase.PrivateCellUtil;
 import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.regionserver.MultiVersionConcurrencyControl;
 import org.apache.hadoop.hbase.regionserver.MultiVersionConcurrencyControl.WriteEntry;
-import org.apache.hadoop.hbase.wal.ListWalProvider.ListWalMetaDataProvider;
+import org.apache.hadoop.hbase.wal.ListWALProvider.ListWALMetaDataProvider;
 import org.apache.hadoop.hbase.wal.WAL;
 import org.apache.hadoop.hbase.wal.WALEdit;
 import org.apache.hadoop.hbase.wal.WALIdentity;
@@ -47,7 +47,7 @@ import org.apache.yetus.audience.InterfaceStability;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public class ListWal implements WAL {
+public class ListWAL implements WAL {
 
   protected final AtomicBoolean shutdown = new AtomicBoolean(false);
   protected final AtomicLong filenum = new AtomicLong(-1);
@@ -58,10 +58,10 @@ public class ListWal implements WAL {
   private String walFilePrefix;
   private String walFileSuffix;
   private boolean closed;
-  private ListWalMetaDataProvider metaDataProvider;
+  private ListWALMetaDataProvider metaDataProvider;
 
-  public ListWal(Configuration conf, String prefix, String suffix,
-      ListWalMetaDataProvider metaDataProvider, List<WALActionsListener> listeners) throws IOException {
+  public ListWAL(Configuration conf, String prefix, String suffix,
+      ListWALMetaDataProvider metaDataProvider, List<WALActionsListener> listeners) throws IOException {
     this.coprocessorHost = new WALCoprocessorHost(this, conf);
     // If prefix is null||empty then just name it wal
     this.walFilePrefix =
@@ -303,7 +303,7 @@ public class ListWal implements WAL {
     private List<Entry> list;
     int count = 0;
 
-    public ListReader(WALIdentity info, ListWalMetaDataProvider metaDataProvider) {
+    public ListReader(WALIdentity info, ListWALMetaDataProvider metaDataProvider) {
       list = metaDataProvider.get(info);
     }
 

@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.client.RegionInfo;
-import org.apache.hadoop.hbase.regionserver.wal.ListWal;
+import org.apache.hadoop.hbase.regionserver.wal.ListWAL;
 import org.apache.hadoop.hbase.regionserver.wal.WALActionsListener;
 import org.apache.hadoop.hbase.regionserver.wal.WALIdentityImpl;
 import org.apache.hadoop.hbase.replication.regionserver.AbstractWALEntryStream;
@@ -43,7 +43,7 @@ import org.apache.yetus.audience.InterfaceStability;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public class ListWalProvider implements WALProvider {
+public class ListWALProvider implements WALProvider {
 
   private Configuration conf;
   private String providerId;
@@ -53,8 +53,8 @@ public class ListWalProvider implements WALProvider {
   private final Object walCreateLock = new Object();
   public static final String WAL_FILE_NAME_DELIMITER = ".";
   public static final String META_WAL_PROVIDER_ID = ".meta";
-  protected volatile ListWal wal;
-  private ListWalMetaDataProvider listWalMetaDataProvider;
+  protected volatile ListWAL wal;
+  private ListWALMetaDataProvider listWALMetaDataProvider;
 
   @Override
   public void init(WALFactory factory, Configuration conf, String providerId) throws IOException {
@@ -73,12 +73,12 @@ public class ListWalProvider implements WALProvider {
       }
     }
     logPrefix = sb.toString();
-    listWalMetaDataProvider = new ListWalMetaDataProvider();
+    listWALMetaDataProvider = new ListWALMetaDataProvider();
   }
 
   @Override
   public WAL getWAL(RegionInfo region) throws IOException {
-    ListWal walCopy = wal;
+    ListWAL walCopy = wal;
     if (walCopy == null) {
       // only lock when need to create wal, and need to lock since
       // creating hlog on fs is time consuming
@@ -102,10 +102,10 @@ public class ListWalProvider implements WALProvider {
     return walCopy;
   }
 
-  private ListWal createWAL() throws IOException {
-    return new ListWal(conf, logPrefix,
+  private ListWAL createWAL() throws IOException {
+    return new ListWAL(conf, logPrefix,
         META_WAL_PROVIDER_ID.equals(providerId) ? META_WAL_PROVIDER_ID : null,
-        listWalMetaDataProvider, listeners);
+        listWALMetaDataProvider, listeners);
   }
 
   @Override
@@ -136,7 +136,7 @@ public class ListWalProvider implements WALProvider {
 
   @Override
   public long getNumLogFiles() {
-    ListWal log = this.wal;
+    ListWAL log = this.wal;
     return log == null ? 0 : log.getNumLogFiles();
   }
 
@@ -146,7 +146,7 @@ public class ListWalProvider implements WALProvider {
    */
   @Override
   public long getLogFileSize() {
-    ListWal log = this.wal;
+    ListWAL log = this.wal;
     return log == null ? 0 : log.getLogFileSize();
   }
 
@@ -169,17 +169,17 @@ public class ListWalProvider implements WALProvider {
 
       @Override
       protected Reader createReader(WALIdentity WALIdentity, Configuration conf) throws IOException {
-        return listWalMetaDataProvider.createReader(WALIdentity);
+        return listWALMetaDataProvider.createReader(WALIdentity);
       }
     };
   }
 
   @Override
   public WALMetaDataProvider getWALMetaDataProvider() throws IOException {
-    return listWalMetaDataProvider;
+    return listWALMetaDataProvider;
   }
 
-  public class ListWalMetaDataProvider implements WALMetaDataProvider {
+  public class ListWALMetaDataProvider implements WALMetaDataProvider {
     ConcurrentHashMap<WALIdentity, List<Entry>> map = new ConcurrentHashMap<WALIdentity, List<Entry>>();
 
     @Override
@@ -188,7 +188,7 @@ public class ListWalProvider implements WALProvider {
     }
 
     public Reader createReader(WALIdentity WALIdentity) {
-      return new ListWal.ListReader(WALIdentity, this);
+      return new ListWAL.ListReader(WALIdentity, this);
     }
 
     @Override
