@@ -30,7 +30,7 @@ import org.apache.yetus.audience.InterfaceStability;
 @InterfaceStability.Evolving
 public interface WALIdentity extends Comparable<WALIdentity> {
 
-  WALIdentity UNKNOWN = new WALIdentity() {
+  static WALIdentity UNKNOWN = new WALIdentity() {
     
     @Override
     public long getWalStartTime() {
@@ -49,6 +49,25 @@ public interface WALIdentity extends Comparable<WALIdentity> {
 
     @Override
     public int compareTo(WALIdentity o) {
+      if (o == UNKNOWN) {
+        return 0;
+      }
+      return -1;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (!(o instanceof WALIdentity)) {
+        return false;
+      }
+      if (compareTo((WALIdentity)o) == 0) {
+        return true;
+      }
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
       return 0;
     }
   };

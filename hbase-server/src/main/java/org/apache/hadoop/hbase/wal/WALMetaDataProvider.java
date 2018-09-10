@@ -26,7 +26,7 @@ import org.apache.yetus.audience.InterfaceStability;
  *
  * It provides facilities that
  *   check existence of certain WAL
- *   retrieve WAL entities under given namespace
+ *   retrieve WAL entities under given name
  */
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
