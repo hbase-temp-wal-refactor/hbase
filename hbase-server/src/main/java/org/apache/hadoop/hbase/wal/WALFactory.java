@@ -272,8 +272,10 @@ public class WALFactory {
       if (provider != null) {
         return provider;
       }
-      provider = createProvider(getProviderClass(META_WAL_PROVIDER_CLASS, META_WAL_PROVIDER,
-          conf.get(WAL_PROVIDER, DEFAULT_WAL_PROVIDER)));
+      boolean metaWALProvPresent = conf.get(META_WAL_PROVIDER_CLASS) != null;
+      provider = createProvider(getProviderClass(
+          metaWALProvPresent ? META_WAL_PROVIDER_CLASS : WAL_PROVIDER_CLASS,
+          META_WAL_PROVIDER, conf.get(WAL_PROVIDER, DEFAULT_WAL_PROVIDER)));
       provider.init(this, conf, AbstractFSWALProvider.META_WAL_PROVIDER_ID);
       provider.addWALActionsListener(new MetricsWAL());
       if (metaProvider.compareAndSet(null, provider)) {
