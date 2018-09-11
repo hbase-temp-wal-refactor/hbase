@@ -48,7 +48,7 @@ import org.apache.hadoop.hbase.shaded.protobuf.generated.WALProtos.WALTrailer;
  * AsyncWriter for protobuf-based WAL.
  */
 @InterfaceAudience.Private
-public class AsyncProtobufLogWriter extends AbstractFSProtobufLogWriter
+public class AsyncProtobufLogWriter extends AbstractProtobufLogWriter
     implements AsyncFSWALProvider.AsyncWriter {
 
   private static final Logger LOG = LoggerFactory.getLogger(AsyncProtobufLogWriter.class);
