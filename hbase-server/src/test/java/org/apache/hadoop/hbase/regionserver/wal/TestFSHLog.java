@@ -217,7 +217,7 @@ public class TestFSHLog extends AbstractTestFSWAL {
       assertEquals("Region did not flush?", 1, region.getStoreFileList(new byte[][]{b}).size());
 
       // now check the region's unflushed seqIds.
-      long seqId = log.getEarliestMemStoreSeqNum(hri.getEncodedNameAsBytes());
+      long seqId = ((AbstractWAL)log).getEarliestMemStoreSeqNum(hri.getEncodedNameAsBytes());
       assertEquals("Found seqId for the region which is already flushed",
           HConstants.NO_SEQNUM, seqId);
 

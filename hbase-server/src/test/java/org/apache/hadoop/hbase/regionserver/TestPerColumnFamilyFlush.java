@@ -46,6 +46,7 @@ import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.regionserver.wal.AbstractWAL;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
 import org.apache.hadoop.hbase.testclassification.RegionServerTests;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -162,7 +163,7 @@ public class TestPerColumnFamilyFlush {
     MemStoreSize cf3MemstoreSize = region.getStore(FAMILY3).getMemStoreSize();
 
     // Get the overall smallest LSN in the region's memstores.
-    long smallestSeqInRegionCurrentMemstore = getWAL(region)
+    long smallestSeqInRegionCurrentMemstore = ((AbstractWAL)getWAL(region))
         .getEarliestMemStoreSeqNum(region.getRegionInfo().getEncodedNameAsBytes());
 
     // The overall smallest LSN in the region's memstores should be the same as
@@ -193,7 +194,7 @@ public class TestPerColumnFamilyFlush {
     cf2MemstoreSize = region.getStore(FAMILY2).getMemStoreSize();
     cf3MemstoreSize = region.getStore(FAMILY3).getMemStoreSize();
     totalMemstoreSize = region.getMemStoreDataSize();
-    smallestSeqInRegionCurrentMemstore = getWAL(region)
+    smallestSeqInRegionCurrentMemstore = ((AbstractWAL)getWAL(region))
         .getEarliestMemStoreSeqNum(region.getRegionInfo().getEncodedNameAsBytes());
 
     // We should have cleared out only CF1, since we chose the flush thresholds
@@ -231,7 +232,7 @@ public class TestPerColumnFamilyFlush {
     cf2MemstoreSize = region.getStore(FAMILY2).getMemStoreSize();
     cf3MemstoreSize = region.getStore(FAMILY3).getMemStoreSize();
     totalMemstoreSize = region.getMemStoreDataSize();
-    smallestSeqInRegionCurrentMemstore = getWAL(region)
+    smallestSeqInRegionCurrentMemstore = ((AbstractWAL)getWAL(region))
         .getEarliestMemStoreSeqNum(region.getRegionInfo().getEncodedNameAsBytes());
 
     // CF1 and CF2, both should be absent.
@@ -314,7 +315,8 @@ public class TestPerColumnFamilyFlush {
     cf3MemstoreSize = region.getStore(FAMILY3).getMemStoreSize();
     totalMemstoreSize = region.getMemStoreDataSize();
     long smallestSeqInRegionCurrentMemstore =
-        region.getWAL().getEarliestMemStoreSeqNum(region.getRegionInfo().getEncodedNameAsBytes());
+        ((AbstractWAL)region.getWAL())
+        .getEarliestMemStoreSeqNum(region.getRegionInfo().getEncodedNameAsBytes());
 
     // Everything should have been cleared
     assertEquals(0, cf1MemstoreSize.getDataSize());

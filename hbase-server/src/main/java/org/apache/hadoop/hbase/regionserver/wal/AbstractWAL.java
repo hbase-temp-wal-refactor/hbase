@@ -317,7 +317,6 @@ public abstract class AbstractWAL<W extends WriterBase> implements WAL {
     this.sequenceIdAccounting.abortCacheFlush(encodedRegionName);
   }
 
-  @Override
   public long getEarliestMemStoreSeqNum(byte[] encodedRegionName) {
     // Used by tests. Deprecated as too subtle for general usage.
     return this.sequenceIdAccounting.getLowestSequenceId(encodedRegionName);

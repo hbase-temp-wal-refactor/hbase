@@ -207,12 +207,6 @@ public class ListWAL implements WAL {
   }
 
   @Override
-  public long getEarliestMemStoreSeqNum(byte[] encodedRegionName) {
-    // Used by tests. Deprecated as too subtle for general usage.
-    return this.sequenceIdAccounting.getLowestSequenceId(encodedRegionName);
-  }
-
-  @Override
   public long getEarliestMemStoreSeqNum(byte[] encodedRegionName, byte[] familyName) {
     return this.sequenceIdAccounting.getLowestSequenceId(encodedRegionName, familyName);
   }
