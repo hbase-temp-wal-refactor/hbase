@@ -253,7 +253,7 @@ public class TestWALLockup {
       dodgyWAL.append(region.getRegionInfo(), key, edit, true);
       boolean exception = false;
       try {
-        dodgyWAL.sync(false);
+        dodgyWAL.sync();
       } catch (Exception e) {
         exception = true;
       }
@@ -426,7 +426,7 @@ public class TestWALLockup {
 
       try {
         LOG.info("Call sync for testing whether RingBufferEventHandler is hanging.");
-        dodgyWAL.sync(false); // Should not get a hang here, otherwise we will see timeout in this test.
+        dodgyWAL.sync(); // Should not get a hang here, otherwise we will see timeout in this test.
         Assert.fail("Expect an IOException here.");
       } catch (IOException ignore) {
       }

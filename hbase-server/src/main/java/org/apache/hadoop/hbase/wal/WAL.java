@@ -126,14 +126,6 @@ public interface WAL extends Closeable, WALFileSizeProvider {
   void sync(long txid) throws IOException;
 
   /**
-   * @param forceSync Flag to force sync rather than flushing to the buffer. Example - Hadoop hflush
-   *          vs hsync.
-   */
-  default void sync(boolean forceSync) throws IOException {
-    sync();
-  }
-
-  /**
    * @param txid Transaction id to sync to.
    * @param forceSync Flag to force sync rather than flushing to the buffer. Example - Hadoop hflush
    *          vs hsync.

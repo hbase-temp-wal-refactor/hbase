@@ -83,12 +83,6 @@ public class TestWALDurability {
       }
 
       @Override
-      public void sync(boolean forceSync) throws IOException {
-        syncFlag = forceSync;
-        super.sync(forceSync);
-      }
-
-      @Override
       public void sync(long txid, boolean forceSync) throws IOException {
         syncFlag = forceSync;
         super.sync(txid, forceSync);

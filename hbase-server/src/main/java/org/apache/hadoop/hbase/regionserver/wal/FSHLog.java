@@ -732,14 +732,7 @@ public class FSHLog extends AbstractFSWAL<Writer> {
 
   @Override
   public void sync() throws IOException {
-    sync(useHsync);
-  }
-
-  @Override
-  public void sync(boolean forceSync) throws IOException {
-    try (TraceScope scope = TraceUtil.createTrace("FSHLog.sync")) {
-      publishSyncThenBlockOnCompletion(scope, forceSync);
-    }
+    sync(Long.MAX_VALUE, useHsync);
   }
 
   @Override
