@@ -32,6 +32,7 @@ import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
 import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
 import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
 import org.apache.hadoop.hbase.replication.regionserver.WALFileSizeProvider;
+import org.apache.hadoop.hbase.wal.WAL.Reader;
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**

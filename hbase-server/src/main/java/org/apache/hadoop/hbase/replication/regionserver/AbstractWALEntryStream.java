@@ -81,7 +81,6 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
     this.serverName = serverName;
     this.metrics = metrics;
     this.eofAutoRecovery = conf.getBoolean("replication.source.eof.autorecovery", false);
-
   }
 
   @Override
@@ -102,6 +101,16 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
   }
 
   @Override
+  public void seek(long pos) throws IOException {
+    reader.seek(pos);
+  }
+
+  @Override
+  public Entry next(Entry reuse) throws IOException {
+    return next();
+  }
+
+  @Override
   public Entry next() throws IOException {
     Entry save = peek();
     currentPositionOfEntry = currentPositionOfReader;
@@ -118,15 +127,14 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
   }
 
   @Override
-  public long getPosition() {
-    return currentPositionOfEntry;
-  }
-
-  @Override
   public WALIdentity getCurrentWALIdentity() {
     return currentPath;
   }
 
+  @Override
+  public long getPosition() {
+    return currentPositionOfEntry;
+  }
 
   @Override
   public void reset() throws IOException {
@@ -242,7 +250,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
     try {
       // Detect if this is a new file, if so get a new reader else
       // reset the current reader so that we see the new data
-      if (reader == null || !getCurrentWALIdentity().equals(path)) {
+      if (reader == null || !currentPath.equals(path)) {
         closeReader();
         reader = createReader(path, conf);
         seek();
