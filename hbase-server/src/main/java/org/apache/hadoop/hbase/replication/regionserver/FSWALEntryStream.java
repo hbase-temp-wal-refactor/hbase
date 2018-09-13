@@ -135,6 +135,41 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
     return path;
   }
 
+  @Override
+  void setCurrentPath(WALIdentity path) {
+    this.currentPath = path;
+  }
+
+  @Override
+  // open a reader on the next log in queue
+  boolean openNextLog() throws IOException {
+    WALIdentity nextPath = logQueue.peek();
+    if (nextPath != null) {
+      openReader(nextPath);
+      if (reader != null) {
+        return true;
+      }
+    } else {
+      // no more files in queue, this could happen for recovered queue, or for a wal group of a sync
+      // replication peer which has already been transited to DA or S.
+      setCurrentPath(null);
+    }
+    return false;
+  }
+
+  @Override
+  protected void openReader(WALIdentity walId) throws IOException {
+    try {
+      super.openReader(walId);
+    } catch (NullPointerException npe) {
+      // Workaround for race condition in HDFS-4380
+      // which throws a NPE if we open a file before any data node has the most recent block
+      // Just sleep and retry. Will require re-reading compressed WALs for compressionContext.
+      LOG.warn("Got NPE opening reader, will retry.");
+      reader = null;
+    }
+  }
+
   private void handleFileNotFound(Path path, FileNotFoundException fnfe) throws IOException {
     // If the log was archived, continue reading from there
     Path archivedLog = getArchivedLog(path);

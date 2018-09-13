@@ -147,9 +147,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
     currentPositionOfEntry = position;
   }
 
-  private void setCurrentPath(WALIdentity path) {
-    this.currentPath = path;
-  }
+  abstract void setCurrentPath(WALIdentity path);
 
   private void tryAdvanceEntry() throws IOException {
     if (checkReader()) {
@@ -230,21 +228,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
   }
 
   // open a reader on the next log in queue
-  private boolean openNextLog() throws IOException {
-    WALIdentity nextPath = logQueue.peek();
-    if (nextPath != null) {
-      openReader(nextPath);
-      if (reader != null) {
-        return true;
-      }
-    } else {
-      // no more files in queue, this could happen for recovered queue, or for a wal group of a sync
-      // replication peer which has already been transited to DA or S.
-      setCurrentPath(null);
-    }
-    return false;
-  }
-
+  abstract boolean openNextLog() throws IOException;
 
   protected void openReader(WALIdentity path) throws IOException {
     try {
@@ -263,12 +247,6 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
       handleIOException (path, ioe);
     } catch (IOException ioe) {
       handleIOException(path, ioe);
-    } catch (NullPointerException npe) {
-      // Workaround for race condition in HDFS-4380
-      // which throws a NPE if we open a file before any data node has the most recent block
-      // Just sleep and retry. Will require re-reading compressed WALs for compressionContext.
-      LOG.warn("Got NPE opening reader, will retry.");
-      reader = null;
     }
   }
 
