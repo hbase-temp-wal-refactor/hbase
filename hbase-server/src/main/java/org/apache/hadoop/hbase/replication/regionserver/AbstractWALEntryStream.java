@@ -263,6 +263,12 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
       handleIOException (path, ioe);
     } catch (IOException ioe) {
       handleIOException(path, ioe);
+    } catch (NullPointerException npe) {
+      // Workaround for race condition in HDFS-4380
+      // which throws a NPE if we open a file before any data node has the most recent block
+      // Just sleep and retry. Will require re-reading compressed WALs for compressionContext.
+      LOG.warn("Got NPE opening reader, will retry.");
+      reader = null;
     }
   }
 
