@@ -30,6 +30,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.ServerName;
@@ -314,8 +315,19 @@ public class RegionGroupingProvider implements WALProvider {
   }
 
   @Override
-  public WALMetaDataProvider getWALMetaDataProvider() throws IOException {
-    return new FSWALMetaDataProvider(CommonFSUtils.getWALFileSystem(conf));
+  public boolean exists(String logLocation) throws IOException {
+    return CommonFSUtils.getWALFileSystem(conf).exists(new Path(logLocation));
+  }
+
+  @Override
+  public WALIdentity[] list(WALIdentity logDir) throws IOException {
+    FileStatus[] listStatus = CommonFSUtils.getWALFileSystem(conf)
+        .listStatus(((FSWALIdentity)logDir).getPath());
+    WALIdentity[] WALIdentitys = new FSWALIdentity[listStatus.length];
+    for (FileStatus fileStatus : listStatus) {
+      WALIdentitys[0] = new FSWALIdentity(fileStatus.getPath());
+    }
+    return WALIdentitys;
   }
 
   @Override

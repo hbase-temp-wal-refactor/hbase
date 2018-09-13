@@ -37,6 +37,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.ServerName;
@@ -376,13 +377,24 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
   }
 
   @Override
-  public WALMetaDataProvider getWALMetaDataProvider() throws IOException {
-    return new FSWALMetaDataProvider(CommonFSUtils.getWALFileSystem(conf));
+  public WALIdentity createWALIdentity(String wal) {
+    return new FSWALIdentity(wal);
   }
 
   @Override
-  public WALIdentity createWALIdentity(String wal) {
-    return new FSWALIdentity(wal);
+  public boolean exists(String logLocation) throws IOException {
+    return CommonFSUtils.getWALFileSystem(conf).exists(new Path(logLocation));
+  }
+
+  @Override
+  public WALIdentity[] list(WALIdentity logDir) throws IOException {
+    FileStatus[] listStatus = CommonFSUtils.getWALFileSystem(conf)
+        .listStatus(((FSWALIdentity)logDir).getPath());
+    WALIdentity[] WALIdentitys = new FSWALIdentity[listStatus.length];
+    for (FileStatus fileStatus : listStatus) {
+      WALIdentitys[0] = new FSWALIdentity(fileStatus.getPath());
+    }
+    return WALIdentitys;
   }
 
   @Override

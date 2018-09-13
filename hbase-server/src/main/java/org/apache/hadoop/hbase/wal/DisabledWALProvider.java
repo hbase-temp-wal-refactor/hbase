@@ -254,6 +254,16 @@ class DisabledWALProvider implements WALProvider {
   }
 
   @Override
+  public boolean exists(String log) throws IOException {
+    return false;
+  }
+
+  @Override
+  public WALIdentity[] list(WALIdentity WALIdentity) throws IOException {
+    return null;
+  }
+
+  @Override
   public long getNumLogFiles() {
     return 0;
   }
@@ -274,11 +284,6 @@ class DisabledWALProvider implements WALProvider {
       MetricsSource metrics) throws IOException {
     return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
       walFileSizeProvider, serverName, metrics);
-  }
-
-  @Override
-  public WALMetaDataProvider getWALMetaDataProvider() throws IOException {
-    return null;
   }
 
   @Override

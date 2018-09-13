@@ -32,7 +32,6 @@ import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
 import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
 import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
 import org.apache.hadoop.hbase.replication.regionserver.WALFileSizeProvider;
-import org.apache.hadoop.hbase.wal.WAL.Reader;
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**
@@ -136,10 +135,18 @@ public interface WALProvider {
       MetricsSource metrics) throws IOException;
 
   /**
-   * @return MetaData provider for the given WAL implementation
+   * @param log complete name of the log to check if it exists or not
+   * @return
    * @throws IOException
    */
-  WALMetaDataProvider getWALMetaDataProvider() throws IOException;
+  boolean exists(String log) throws IOException;
+
+  /**
+   * @param WalIdentity it could be a namespace for a Stream or directory/path for a FS based storage
+   * @return
+   * @throws IOException
+   */
+  WALIdentity[] list(WALIdentity WalIdentity) throws IOException;
 
   /**
    * Creates WALIdentity for WAL path/name

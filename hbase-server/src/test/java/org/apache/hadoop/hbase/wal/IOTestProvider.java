@@ -310,8 +310,13 @@ public class IOTestProvider implements WALProvider {
   }
 
   @Override
-  public WALMetaDataProvider getWALMetaDataProvider() throws IOException {
-    return new FSWALMetaDataProvider(CommonFSUtils.getWALFileSystem(conf));
+  public boolean exists(String log) throws IOException {
+    return false;
+  }
+
+  @Override
+  public WALIdentity[] list(WALIdentity WALIdentity) throws IOException {
+    return null;
   }
 
   @Override

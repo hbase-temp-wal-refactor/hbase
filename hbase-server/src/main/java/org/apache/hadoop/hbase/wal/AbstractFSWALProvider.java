@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
@@ -562,12 +563,23 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
     return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
         walFileSizeProvider, serverName, metrics);
   }
-  
+
   @Override
-  public WALMetaDataProvider getWALMetaDataProvider() throws IOException {
-    return new FSWALMetaDataProvider(CommonFSUtils.getWALFileSystem(conf));
+  public boolean exists(String logLocation) throws IOException {
+    return CommonFSUtils.getWALFileSystem(conf).exists(new Path(logLocation));
   }
-  
+
+  @Override
+  public WALIdentity[] list(WALIdentity logDir) throws IOException {
+    FileStatus[] listStatus = CommonFSUtils.getWALFileSystem(conf)
+        .listStatus(((FSWALIdentity)logDir).getPath());
+    WALIdentity[] WALIdentitys = new FSWALIdentity[listStatus.length];
+    for (FileStatus fileStatus : listStatus) {
+      WALIdentitys[0] = new FSWALIdentity(fileStatus.getPath());
+    }
+    return WALIdentitys;
+  }
+
   @Override
   public WALIdentity createWALIdentity(String wal) {
     return new FSWALIdentity(wal);
