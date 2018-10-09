@@ -65,12 +65,6 @@ public class FSWALIdentity implements WALIdentity{
     }
   }
 
-  @Override
-  public long getSize() throws IOException {
-    // TODO Implement WALIdentity.getSize
-    return -1;
-  }
-
   /**
    * @return {@link Path} object of the name encapsulated in WALIdentity
    */

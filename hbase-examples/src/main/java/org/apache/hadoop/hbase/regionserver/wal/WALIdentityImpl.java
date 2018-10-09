@@ -50,12 +50,6 @@ public class WALIdentityImpl implements WALIdentity {
   }
 
   @Override
-  public long getSize() throws IOException {
-    // TODO Implement WALIdentity.getSize
-    return 0;
-  }
-
-  @Override
   public boolean equals(Object obj) {
     if (obj == null) return false;
     if (obj instanceof WALIdentity) {

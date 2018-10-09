@@ -38,11 +38,6 @@ public interface WALIdentity extends Comparable<WALIdentity> {
     }
     
     @Override
-    public long getSize() throws IOException{
-      return 0;
-    }
-    
-    @Override
     public String getName() {
       return "UNKNOWN";
     }
@@ -84,12 +79,5 @@ public interface WALIdentity extends Comparable<WALIdentity> {
    * @return start time of the wal
    */
   long getWalStartTime();
-
-  /**
-   * Used for getting the size of the Wal
-   * @return size of the log stream or file
-   * @throws IOException
-   */
-  long getSize() throws IOException;
 
 }

@@ -327,12 +327,6 @@ public class ReplicationSource implements ReplicationSourceInterface {
       replicationDelay =
           ReplicationLoad.calculateReplicationDelay(ageOfLastShippedOp, lastTimeStamp, queueSize);
       WALIdentity currentPath = shipper.getCurrentWALIdentity();
-      try {
-        fileSize = currentPath.getSize();
-      } catch (IOException e) {
-        LOG.warn("Ignore the exception as the file size of HLog only affects the web ui", e);
-        fileSize = -1;
-      }
       fileSize = -1;
       ReplicationStatus.ReplicationStatusBuilder statusBuilder = ReplicationStatus.newBuilder();
       statusBuilder.withPeerId(this.getPeerId())
