@@ -254,7 +254,7 @@ class DisabledWALProvider implements WALProvider {
   }
 
   @Override
-  public boolean exists(String log) throws IOException {
+  public boolean exists(WALIdentity log) throws IOException {
     return false;
   }
 

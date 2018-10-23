@@ -60,10 +60,10 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource {
     PriorityBlockingQueue<WALIdentity> newWALIdentities =
         new PriorityBlockingQueue<WALIdentity>(queueSizePerGroup, new LogsComparator());
     WALIdentityLoop:
-    for (WALIdentity WALIdentity : queue) {
-      if (walProvider.exists(((FSWALIdentity)WALIdentity).getPath().toString())) {
+    for (WALIdentity walIdentity : queue) {
+      if (walProvider.exists(walIdentity)) {
         // still in same location, don't need to do anything
-        newWALIdentities.add(WALIdentity);
+        newWALIdentities.add(walIdentity);
         continue;
       }
       // WALIdentity changed - try to find the right WALIdentity.
@@ -71,7 +71,7 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource {
       if (server instanceof ReplicationSyncUp.DummyServer) {
         // In the case of disaster/recovery, HMaster may be shutdown/crashed before flush data
         // from .logs to .oldlogs. Loop into .logs folders and check whether a match exists
-        WALIdentity newWALIdentity = getReplSyncUpPath(WALIdentity);
+        WALIdentity newWALIdentity = getReplSyncUpPath(walIdentity);
         newWALIdentities.add(newWALIdentity);
         continue;
       } else {
@@ -84,22 +84,22 @@ public class FSRecoveredReplicationSource extends RecoveredReplicationSource {
           final Path deadRsDirectory =
               new Path(walDir, AbstractFSWALProvider.getWALDirectoryName(curDeadServerName
                   .getServerName()));
-          Path[] locs = new Path[] { new Path(deadRsDirectory, WALIdentity.getName()), new Path(
-              deadRsDirectory.suffix(AbstractFSWALProvider.SPLITTING_EXT), WALIdentity.getName()) };
+          Path[] locs = new Path[] { new Path(deadRsDirectory, walIdentity.getName()), new Path(
+              deadRsDirectory.suffix(AbstractFSWALProvider.SPLITTING_EXT), walIdentity.getName()) };
           for (Path possibleLogLocation : locs) {
             LOG.info("Possible location " + possibleLogLocation.toUri().toString());
-            if (walProvider.exists(possibleLogLocation.toString())) {
+            if (walProvider.exists(new FSWALIdentity(possibleLogLocation))) {
               // We found the right new location
-              LOG.info("Log " + WALIdentity + " still exists at " + possibleLogLocation);
+              LOG.info("Log " + walIdentity + " still exists at " + possibleLogLocation);
               newWALIdentities.add(new FSWALIdentity(possibleLogLocation));
               continue WALIdentityLoop;
             }
           }
         }
         // didn't find a new location
-        LOG.error(
-          String.format("WAL Path %s doesn't exist and couldn't find its new location", WALIdentity));
-        newWALIdentities.add(WALIdentity);
+        LOG.error(String.format("WAL Path %s doesn't exist and couldn't find its new location",
+              walIdentity));
+        newWALIdentities.add(walIdentity);
       }
     }
 

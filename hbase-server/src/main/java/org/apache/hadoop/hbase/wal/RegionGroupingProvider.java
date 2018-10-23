@@ -315,8 +315,8 @@ public class RegionGroupingProvider implements WALProvider {
   }
 
   @Override
-  public boolean exists(String logLocation) throws IOException {
-    return CommonFSUtils.getWALFileSystem(conf).exists(new Path(logLocation));
+  public boolean exists(WALIdentity log) throws IOException {
+    return CommonFSUtils.getWALFileSystem(conf).exists(((FSWALIdentity)log).getPath());
   }
 
   @Override

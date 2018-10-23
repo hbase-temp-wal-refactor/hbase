@@ -139,7 +139,7 @@ public interface WALProvider {
    * @return
    * @throws IOException
    */
-  boolean exists(String log) throws IOException;
+  boolean exists(WALIdentity log) throws IOException;
 
   /**
    * @param WalIdentity it could be a namespace for a Stream or directory/path for a FS based storage
