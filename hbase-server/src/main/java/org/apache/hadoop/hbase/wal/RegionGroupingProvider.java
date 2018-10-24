@@ -45,9 +45,11 @@ import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSour
 import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
 import org.apache.hadoop.hbase.replication.regionserver.WALFileSizeProvider;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.CancelableProgressable;
 import org.apache.hadoop.hbase.util.CommonFSUtils;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.KeyLocker;
+import org.apache.hadoop.hbase.wal.AbstractFSWALProvider.Reader;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -311,7 +313,7 @@ public class RegionGroupingProvider implements WALProvider {
       long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
       MetricsSource metrics) throws IOException {
     return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
-      walFileSizeProvider, serverName, metrics);
+      walFileSizeProvider, serverName, metrics, this);
   }
 
   @Override
@@ -328,6 +330,15 @@ public class RegionGroupingProvider implements WALProvider {
       WALIdentitys[0] = new FSWALIdentity(fileStatus.getPath());
     }
     return WALIdentitys;
+  }
+
+  @Override
+  public Reader createReader(final WALIdentity path, CancelableProgressable reporter,
+      boolean allowCustom) throws IOException {
+    if (cached.isEmpty()) {
+      getWAL("general");
+    }
+    return cached.values().iterator().next().createReader(path, reporter, allowCustom);
   }
 
   @Override

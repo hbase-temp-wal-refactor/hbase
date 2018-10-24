@@ -55,11 +55,13 @@ import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSour
 import org.apache.hadoop.hbase.replication.regionserver.SyncReplicationPeerInfoProvider;
 import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
 import org.apache.hadoop.hbase.replication.regionserver.WALFileSizeProvider;
+import org.apache.hadoop.hbase.util.CancelableProgressable;
 import org.apache.hadoop.hbase.util.CommonFSUtils;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.KeyLocker;
 import org.apache.hadoop.hbase.util.Pair;
+import org.apache.hadoop.hbase.wal.AbstractFSWALProvider.Reader;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -373,7 +375,7 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
                                      ServerName serverName, MetricsSource metrics)
                                          throws IOException {
     return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
-            walFileSizeProvider, serverName, metrics);
+            walFileSizeProvider, serverName, metrics, this);
   }
 
   @Override
@@ -397,6 +399,11 @@ public class SyncReplicationWALProvider implements WALProvider, PeerActionListen
     return WALIdentitys;
   }
 
+  @Override
+  public Reader createReader(final WALIdentity path, CancelableProgressable reporter,
+      boolean allowCustom) throws IOException {
+    return provider.createReader(path, reporter, allowCustom);
+  }
   @Override
   public RecoveredReplicationSource getRecoveredReplicationSource() {
     return new FSRecoveredReplicationSource();

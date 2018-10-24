@@ -32,6 +32,8 @@ import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
 import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
 import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
 import org.apache.hadoop.hbase.replication.regionserver.WALFileSizeProvider;
+import org.apache.hadoop.hbase.util.CancelableProgressable;
+import org.apache.hadoop.hbase.wal.AbstractFSWALProvider.Reader;
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**
@@ -127,7 +129,7 @@ public interface WALProvider {
    * @param walFileSizeProvider 
    * @param serverName name of the server
    * @param metrics metric source
-   * @return
+   * @return WALEntryStream instance
    * @throws IOException
    */
   WALEntryStream getWalStream(PriorityBlockingQueue<WALIdentity> logQueue, Configuration conf,
@@ -147,6 +149,9 @@ public interface WALProvider {
    * @throws IOException
    */
   WALIdentity[] list(WALIdentity WalIdentity) throws IOException;
+
+  public Reader createReader(final WALIdentity path, CancelableProgressable reporter,
+      boolean allowCustom) throws IOException;
 
   /**
    * Creates WALIdentity for WAL path/name

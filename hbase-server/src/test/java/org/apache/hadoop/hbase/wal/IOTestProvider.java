@@ -44,8 +44,10 @@ import org.apache.hadoop.hbase.replication.regionserver.MetricsSource;
 import org.apache.hadoop.hbase.replication.regionserver.RecoveredReplicationSource;
 import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
 import org.apache.hadoop.hbase.replication.regionserver.WALFileSizeProvider;
+import org.apache.hadoop.hbase.util.CancelableProgressable;
 import org.apache.hadoop.hbase.util.CommonFSUtils;
 import org.apache.hadoop.hbase.util.FSUtils;
+import org.apache.hadoop.hbase.wal.AbstractFSWALProvider.Reader;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
@@ -306,7 +308,7 @@ public class IOTestProvider implements WALProvider {
       long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
       MetricsSource metrics) throws IOException {
     return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
-      walFileSizeProvider, serverName, metrics);
+      walFileSizeProvider, serverName, metrics, this);
   }
 
   @Override
@@ -316,6 +318,11 @@ public class IOTestProvider implements WALProvider {
 
   @Override
   public WALIdentity[] list(WALIdentity WALIdentity) throws IOException {
+    return null;
+  }
+  @Override
+  public Reader createReader(final WALIdentity path, CancelableProgressable reporter,
+      boolean allowCustom) throws IOException {
     return null;
   }
 

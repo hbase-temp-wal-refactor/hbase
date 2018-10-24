@@ -18,7 +18,6 @@
 package org.apache.hadoop.hbase.wal;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.hadoop.conf.Configuration;
@@ -28,10 +27,7 @@ import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.regionserver.wal.MetricsWAL;
 import org.apache.hadoop.hbase.regionserver.wal.ProtobufLogReader;
 import org.apache.hadoop.hbase.util.CancelableProgressable;
-import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
-import org.apache.hadoop.hbase.util.LeaseNotRecoveredException;
 import org.apache.hadoop.hbase.wal.WAL.Reader;
-import org.apache.hadoop.hbase.wal.WALProvider.Writer;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,7 +102,7 @@ public class WALFactory {
   private final Configuration conf;
 
   // Used for the singleton WALFactory, see below.
-  private WALFactory(Configuration conf) {
+  private WALFactory(Configuration conf) throws IOException {
     // this code is duplicated here so we can keep our members final.
     // until we've moved reader/writer construction down into providers, this initialization must
     // happen prior to provider initialization, in case they need to instantiate a reader/writer.
@@ -118,8 +114,22 @@ public class WALFactory {
     // end required early initialization
 
     // this instance can't create wals, just reader/writers.
-    provider = null;
     factoryId = SINGLETON_ID;
+    if (conf.getBoolean("hbase.regionserver.hlog.enabled", true)) {
+      WALProvider provider = createProvider(
+          getProviderClass(WAL_PROVIDER_CLASS, WAL_PROVIDER, DEFAULT_WAL_PROVIDER));
+      if (false) {
+        provider = new SyncReplicationWALProvider(provider);
+      }
+      provider.init(this, conf, null);
+      provider.addWALActionsListener(new MetricsWAL());
+      this.provider = provider;
+    } else {
+      // special handling of existing configuration behavior.
+      LOG.warn("Running with WAL disabled.");
+      provider = new DisabledWALProvider();
+      provider.init(this, conf, factoryId);
+    }
   }
 
   @VisibleForTesting
@@ -313,71 +323,8 @@ public class WALFactory {
    */
   public Reader createReader(final FileSystem fs, final Path path,
       CancelableProgressable reporter) throws IOException {
-    return createReader(fs, path, reporter, true);
-  }
-
-  public Reader createReader(final FileSystem fs, final Path path, CancelableProgressable reporter,
-      boolean allowCustom) throws IOException {
-    Class<? extends AbstractFSWALProvider.Reader> lrClass =
-        allowCustom ? logReaderClass : ProtobufLogReader.class;
-    try {
-      // A wal file could be under recovery, so it may take several
-      // tries to get it open. Instead of claiming it is corrupted, retry
-      // to open it up to 5 minutes by default.
-      long startWaiting = EnvironmentEdgeManager.currentTime();
-      long openTimeout = timeoutMillis + startWaiting;
-      int nbAttempt = 0;
-      AbstractFSWALProvider.Reader reader = null;
-      while (true) {
-        try {
-          reader = lrClass.getDeclaredConstructor().newInstance();
-          reader.init(fs, path, conf, null);
-          return reader;
-        } catch (IOException e) {
-          if (reader != null) {
-            try {
-              reader.close();
-            } catch (IOException exception) {
-              LOG.warn("Could not close FSDataInputStream" + exception.getMessage());
-              LOG.debug("exception details", exception);
-            }
-          }
-
-          String msg = e.getMessage();
-          if (msg != null
-              && (msg.contains("Cannot obtain block length")
-                  || msg.contains("Could not obtain the last block") || msg
-                    .matches("Blocklist for [^ ]* has changed.*"))) {
-            if (++nbAttempt == 1) {
-              LOG.warn("Lease should have recovered. This is not expected. Will retry", e);
-            }
-            if (reporter != null && !reporter.progress()) {
-              throw new InterruptedIOException("Operation is cancelled");
-            }
-            if (nbAttempt > 2 && openTimeout < EnvironmentEdgeManager.currentTime()) {
-              LOG.error("Can't open after " + nbAttempt + " attempts and "
-                  + (EnvironmentEdgeManager.currentTime() - startWaiting) + "ms " + " for " + path);
-            } else {
-              try {
-                Thread.sleep(nbAttempt < 3 ? 500 : 1000);
-                continue; // retry
-              } catch (InterruptedException ie) {
-                InterruptedIOException iioe = new InterruptedIOException();
-                iioe.initCause(ie);
-                throw iioe;
-              }
-            }
-            throw new LeaseNotRecoveredException(e);
-          } else {
-            throw e;
-          }
-        }
-      }
-    } catch (IOException ie) {
-      throw ie;
-    } catch (Exception e) {
-      throw new IOException("Cannot get log reader", e);
-    }
+    WALProvider provider = getWALProvider();
+    return provider.createReader(new FSWALIdentity(path), reporter, true);
   }
 
   // These static methods are currently used where it's impractical to
@@ -391,7 +338,12 @@ public class WALFactory {
   public static WALFactory getInstance(Configuration configuration) {
     WALFactory factory = singleton.get();
     if (null == factory) {
-      WALFactory temp = new WALFactory(configuration);
+      WALFactory temp = null;
+      try {
+        temp = new WALFactory(configuration);
+      } catch (IOException ioe) {
+        throw new IllegalStateException(ioe);
+      }
       if (singleton.compareAndSet(null, temp)) {
         factory = temp;
       } else {
@@ -435,7 +387,8 @@ public class WALFactory {
    */
   public static Reader createReaderIgnoreCustomClass(final FileSystem fs, final Path path,
       final Configuration configuration) throws IOException {
-    return getInstance(configuration).createReader(fs, path, null, false);
+    return getInstance(configuration).getWALProvider()
+        .createReader(new FSWALIdentity(path), null, false);
   }
 
   public final WALProvider getWALProvider() {

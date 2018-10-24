@@ -35,6 +35,7 @@ import org.apache.hadoop.hbase.util.LeaseNotRecoveredException;
 import org.apache.hadoop.hbase.wal.FSWALIdentity;
 import org.apache.hadoop.hbase.wal.WALFactory;
 import org.apache.hadoop.hbase.wal.WALIdentity;
+import org.apache.hadoop.hbase.wal.WALProvider;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WAL.Reader;
 import org.apache.yetus.audience.InterfaceAudience;
@@ -53,12 +54,14 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
   private static final Logger LOG = LoggerFactory.getLogger(FSWALEntryStream.class);
 
   private FileSystem fs;
+  private WALProvider provider;
 
   public FSWALEntryStream(FileSystem fs, PriorityBlockingQueue<WALIdentity> logQueue, Configuration conf,
       long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
-      MetricsSource metrics) throws IOException {
+      MetricsSource metrics, WALProvider provider) throws IOException {
     super(logQueue, conf, startPosition, walFileSizeProvider, serverName, metrics);
     this.fs = fs;
+    this.provider = provider;
   }
 
   @Override
@@ -252,8 +255,8 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
   }
 
   @Override
-  protected Reader createReader(WALIdentity path, Configuration conf) throws IOException {
-    return WALFactory.createReader(fs, ((FSWALIdentity)path).getPath(), conf);
+  protected Reader createReader(WALIdentity walId, Configuration conf) throws IOException {
+    return provider.createReader(walId, null, false);
   }
 
 }

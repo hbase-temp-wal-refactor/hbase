@@ -19,6 +19,7 @@ package org.apache.hadoop.hbase.wal;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +42,7 @@ import org.apache.yetus.audience.InterfaceStability;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.hbase.regionserver.wal.AbstractFSWAL;
+import org.apache.hadoop.hbase.regionserver.wal.ProtobufLogReader;
 import org.apache.hadoop.hbase.regionserver.wal.WALActionsListener;
 import org.apache.hadoop.hbase.replication.regionserver.FSRecoveredReplicationSource;
 import org.apache.hadoop.hbase.replication.regionserver.FSWALEntryStream;
@@ -50,6 +52,7 @@ import org.apache.hadoop.hbase.replication.regionserver.WALEntryStream;
 import org.apache.hadoop.hbase.replication.regionserver.WALFileSizeProvider;
 import org.apache.hadoop.hbase.util.CancelableProgressable;
 import org.apache.hadoop.hbase.util.CommonFSUtils;
+import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.LeaseNotRecoveredException;
 import org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting;
@@ -96,7 +99,11 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
   protected AtomicBoolean initialized = new AtomicBoolean(false);
   // for default wal provider, logPrefix won't change
   protected String logPrefix;
-
+  private Class<? extends AbstractFSWALProvider.Reader> logReaderClass;
+  /**
+   * How long to attempt opening in-recovery wals
+   */
+  private int timeoutMillis;
   /**
    * we synchronized on walCreateLock to prevent wal recreation in different threads
    */
@@ -114,6 +121,9 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
     if (!initialized.compareAndSet(false, true)) {
       throw new IllegalStateException("WALProvider.init should only be called once.");
     }
+    timeoutMillis = conf.getInt("hbase.hlog.open.timeout", 300000);
+    logReaderClass = conf.getClass("hbase.regionserver.hlog.reader.impl", ProtobufLogReader.class,
+        AbstractFSWALProvider.Reader.class);
     this.factory = factory;
     this.conf = conf;
     this.providerId = providerId;
@@ -561,7 +571,7 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
       long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
       MetricsSource metrics) throws IOException {
     return new FSWALEntryStream(CommonFSUtils.getWALFileSystem(conf), logQueue, conf, startPosition,
-        walFileSizeProvider, serverName, metrics);
+        walFileSizeProvider, serverName, metrics, this);
   }
 
   @Override
@@ -580,6 +590,72 @@ public abstract class AbstractFSWALProvider<T extends AbstractFSWAL<?>> implemen
     return WALIdentitys;
   }
 
+  @Override
+  public Reader createReader(final WALIdentity walId, CancelableProgressable reporter,
+      boolean allowCustom) throws IOException {
+    Path path = ((FSWALIdentity)walId).getPath();
+    FileSystem fs = path.getFileSystem(conf);
+    Class<? extends AbstractFSWALProvider.Reader> lrClass =
+        allowCustom ? logReaderClass : ProtobufLogReader.class;
+    try {
+      // A wal file could be under recovery, so it may take several
+      // tries to get it open. Instead of claiming it is corrupted, retry
+      // to open it up to 5 minutes by default.
+      long startWaiting = EnvironmentEdgeManager.currentTime();
+      long openTimeout = timeoutMillis + startWaiting;
+      int nbAttempt = 0;
+      AbstractFSWALProvider.Reader reader = null;
+      while (true) {
+        try {
+          reader = lrClass.getDeclaredConstructor().newInstance();
+          reader.init(fs, path, conf, null);
+          return reader;
+        } catch (IOException e) {
+          if (reader != null) {
+            try {
+              reader.close();
+            } catch (IOException exception) {
+              LOG.warn("Could not close FSDataInputStream" + exception.getMessage());
+              LOG.debug("exception details", exception);
+            }
+          }
+
+          String msg = e.getMessage();
+          if (msg != null
+              && (msg.contains("Cannot obtain block length")
+                  || msg.contains("Could not obtain the last block") || msg
+                    .matches("Blocklist for [^ ]* has changed.*"))) {
+            if (++nbAttempt == 1) {
+              LOG.warn("Lease should have recovered. This is not expected. Will retry", e);
+            }
+            if (reporter != null && !reporter.progress()) {
+              throw new InterruptedIOException("Operation is cancelled");
+            }
+            if (nbAttempt > 2 && openTimeout < EnvironmentEdgeManager.currentTime()) {
+              LOG.error("Can't open after " + nbAttempt + " attempts and "
+                  + (EnvironmentEdgeManager.currentTime() - startWaiting) + "ms " + " for " + path);
+            } else {
+              try {
+                Thread.sleep(nbAttempt < 3 ? 500 : 1000);
+                continue; // retry
+              } catch (InterruptedException ie) {
+                InterruptedIOException iioe = new InterruptedIOException();
+                iioe.initCause(ie);
+                throw iioe;
+              }
+            }
+            throw new LeaseNotRecoveredException(e);
+          } else {
+            throw e;
+          }
+        }
+      }
+    } catch (IOException ie) {
+      throw ie;
+    } catch (Exception e) {
+      throw new IOException("Cannot get log reader", e);
+    }
+  }
   @Override
   public WALIdentity createWALIdentity(String wal) {
     return new FSWALIdentity(wal);
