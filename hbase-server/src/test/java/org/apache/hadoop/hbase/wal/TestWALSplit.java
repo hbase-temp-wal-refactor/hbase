@@ -684,7 +684,7 @@ public class TestWALSplit {
     assertEquals(1, splitLog.length);
 
     int actualCount = 0;
-    Reader in = wals.createReader(fs, splitLog[0]);
+    Reader in = wals.createReader(fs, splitLog[0], conf);
     @SuppressWarnings("unused")
     Entry entry;
     while ((entry = in.next()) != null) ++actualCount;
@@ -1336,7 +1336,7 @@ public class TestWALSplit {
 
   private int countWAL(Path log) throws IOException {
     int count = 0;
-    Reader in = wals.createReader(fs, log);
+    Reader in = wals.createReader(fs, log, conf);
     while (in.next() != null) {
       count++;
     }
@@ -1415,8 +1415,8 @@ public class TestWALSplit {
 
   private boolean logsAreEqual(Path p1, Path p2) throws IOException {
     Reader in1, in2;
-    in1 = wals.createReader(fs, p1);
-    in2 = wals.createReader(fs, p2);
+    in1 = wals.createReader(fs, p1, conf);
+    in2 = wals.createReader(fs, p2, conf);
     Entry entry1;
     Entry entry2;
     while ((entry1 = in1.next()) != null) {

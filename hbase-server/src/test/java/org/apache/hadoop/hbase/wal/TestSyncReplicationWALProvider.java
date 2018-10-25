@@ -115,12 +115,14 @@ public class TestSyncReplicationWALProvider {
     Path localFile = wal.getCurrentFileName();
     Path remoteFile = new Path(REMOTE_WAL_DIR + "/" + PEER_ID, localFile.getName());
     try (ProtobufLogReader reader =
-      (ProtobufLogReader) FACTORY.createReader(UTIL.getTestFileSystem(), localFile)) {
+      (ProtobufLogReader) FACTORY.createReader(UTIL.getTestFileSystem(), localFile,
+          UTIL.getConfiguration())) {
       ProtobufLogTestHelper.doRead(reader, false, REGION, TABLE, columnCount, recordCount, row,
         timestamp);
     }
     try (ProtobufLogReader reader =
-      (ProtobufLogReader) FACTORY.createReader(UTIL.getTestFileSystem(), remoteFile)) {
+      (ProtobufLogReader) FACTORY.createReader(UTIL.getTestFileSystem(), remoteFile,
+          UTIL.getConfiguration())) {
       ProtobufLogTestHelper.doRead(reader, false, REGION, TABLE, columnCount, recordCount, row,
         timestamp);
     }
@@ -146,12 +148,14 @@ public class TestSyncReplicationWALProvider {
       }
     });
     try (ProtobufLogReader reader =
-      (ProtobufLogReader) FACTORY.createReader(UTIL.getTestFileSystem(), localFile)) {
+      (ProtobufLogReader) FACTORY.createReader(UTIL.getTestFileSystem(), localFile,
+          UTIL.getConfiguration())) {
       ProtobufLogTestHelper.doRead(reader, true, REGION, TABLE, columnCount, recordCount, row,
         timestamp);
     }
     try (ProtobufLogReader reader =
-      (ProtobufLogReader) FACTORY.createReader(UTIL.getTestFileSystem(), remoteFile)) {
+      (ProtobufLogReader) FACTORY.createReader(UTIL.getTestFileSystem(), remoteFile,
+          UTIL.getConfiguration())) {
       ProtobufLogTestHelper.doRead(reader, true, REGION, TABLE, columnCount, recordCount, row,
         timestamp);
     }

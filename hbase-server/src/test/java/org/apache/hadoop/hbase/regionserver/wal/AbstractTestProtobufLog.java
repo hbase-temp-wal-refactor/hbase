@@ -118,7 +118,8 @@ public abstract class AbstractTestProtobufLog {
     try (WALProvider.Writer writer = createWriter(path)) {
       ProtobufLogTestHelper.doWrite(writer, withTrailer, tableName, columnCount, recordCount, row,
         timestamp);
-      try (ProtobufLogReader reader = (ProtobufLogReader) wals.createReader(fs, path)) {
+      try (ProtobufLogReader reader = (ProtobufLogReader) wals.createReader(fs, path,
+          TEST_UTIL.getConfiguration())) {
         ProtobufLogTestHelper.doRead(reader, withTrailer, tableName, columnCount, recordCount, row,
           timestamp);
       }

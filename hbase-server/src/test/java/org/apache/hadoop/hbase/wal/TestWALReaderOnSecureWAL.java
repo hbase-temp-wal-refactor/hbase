@@ -143,7 +143,7 @@ public class TestWALReaderOnSecureWAL {
   }
 
   private void testSecureWALInternal(boolean offheap) throws IOException, FileNotFoundException {
-    Configuration conf = TEST_UTIL.getConfiguration();
+    Configuration conf = new Configuration(TEST_UTIL.getConfiguration());
     conf.setClass("hbase.regionserver.hlog.reader.impl", ProtobufLogReader.class,
       WAL.Reader.class);
     conf.setClass("hbase.regionserver.hlog.writer.impl", SecureProtobufLogWriter.class,
@@ -165,7 +165,7 @@ public class TestWALReaderOnSecureWAL {
 
     // Confirm the WAL cannot be read back by ProtobufLogReader
     try {
-      wals.createReader(TEST_UTIL.getTestFileSystem(), walPath);
+      wals.createReader(TEST_UTIL.getTestFileSystem(), walPath, TEST_UTIL.getConfiguration());
       assertFalse(true);
     } catch (IOException ioe) {
       // expected IOE
@@ -188,7 +188,7 @@ public class TestWALReaderOnSecureWAL {
 
   @Test()
   public void testSecureWALReaderOnWAL() throws Exception {
-    Configuration conf = TEST_UTIL.getConfiguration();
+    Configuration conf = new Configuration(TEST_UTIL.getConfiguration());
     conf.setClass("hbase.regionserver.hlog.reader.impl", SecureProtobufLogReader.class,
       WAL.Reader.class);
     conf.setClass("hbase.regionserver.hlog.writer.impl", ProtobufLogWriter.class,
@@ -209,7 +209,8 @@ public class TestWALReaderOnSecureWAL {
 
     // Confirm the WAL can be read back by SecureProtobufLogReader
     try {
-      WAL.Reader reader = wals.createReader(TEST_UTIL.getTestFileSystem(), walPath);
+      WAL.Reader reader = wals.createReader(TEST_UTIL.getTestFileSystem(), walPath,
+          conf);
       reader.close();
     } catch (IOException ioe) {
       assertFalse(true);

@@ -277,7 +277,7 @@ public class TestDurability {
 
   private void verifyWALCount(WALFactory wals, WAL log, int expected) throws Exception {
     Path walPath = AbstractFSWALProvider.getCurrentFileName(log);
-    WAL.Reader reader = wals.createReader(FS, walPath);
+    WAL.Reader reader = wals.createReader(FS, walPath, CONF);
     int count = 0;
     WAL.Entry entry = new WAL.Entry();
     while (reader.next(entry) != null) {

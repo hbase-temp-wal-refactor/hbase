@@ -203,9 +203,10 @@ public class TestWALMonotonicallyIncreasingSeqId {
 
   private WAL.Reader createReader(Path logPath, Path oldWalsDir) throws IOException {
     try {
-      return wals.createReader(fileSystem, logPath);
+      return wals.createReader(wals.getWALProvider().createWALIdentity(logPath.toString()));
     } catch (IOException e) {
-      return wals.createReader(fileSystem, new Path(oldWalsDir, logPath.getName()));
+      Path p = new Path(oldWalsDir, logPath.getName());
+      return wals.createReader(wals.getWALProvider().createWALIdentity(p.toString()));
     }
   }
 

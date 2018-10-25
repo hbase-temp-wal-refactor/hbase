@@ -810,7 +810,8 @@ public class WALSplitter {
    * @return new Reader instance, caller should close
    */
   protected Reader getReader(Path curLogFile, CancelableProgressable reporter) throws IOException {
-    return walFactory.createReader(fs, curLogFile, reporter);
+    WALProvider provider = walFactory.getWALProvider();
+    return provider.createReader(provider.createWALIdentity(curLogFile.toString()), reporter, true);
   }
 
   /**
@@ -1288,7 +1289,9 @@ public class WALSplitter {
     private void deleteOneWithFewerEntries(FileSystem rootFs, WriterAndPath wap, Path dst)
         throws IOException {
       long dstMinLogSeqNum = -1L;
-      try (WAL.Reader reader = walFactory.createReader(fs, dst)) {
+      WALProvider provider = walFactory.getWALProvider();
+      try (WAL.Reader reader = provider.createReader(provider.createWALIdentity(dst.toString()),
+          null, true)) {
         WAL.Entry entry = reader.next();
         if (entry != null) {
           dstMinLogSeqNum = entry.getKey().getSequenceId();

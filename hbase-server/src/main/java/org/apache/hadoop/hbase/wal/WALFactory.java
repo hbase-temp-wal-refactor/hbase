@@ -310,8 +310,8 @@ public class WALFactory {
     }
   }
 
-  public Reader createReader(final FileSystem fs, final Path path) throws IOException {
-    return createReader(fs, path, (CancelableProgressable)null);
+  public Reader createReader(final WALIdentity path) throws IOException {
+    return createReader(path, (CancelableProgressable)null);
   }
 
   /**
@@ -321,7 +321,7 @@ public class WALFactory {
    * @return A WAL reader.  Close when done with it.
    * @throws IOException
    */
-  public Reader createReader(final FileSystem fs, final Path path,
+  public Reader createReader(final WALIdentity path,
       CancelableProgressable reporter) throws IOException {
     WALProvider provider = getWALProvider();
     return provider.createReader(provider.createWALIdentity(path.toString()), reporter, true);
@@ -366,7 +366,8 @@ public class WALFactory {
    */
   public static Reader createReader(final FileSystem fs, final Path path,
       final Configuration configuration) throws IOException {
-    return getInstance(configuration).createReader(fs, path);
+    WALProvider provider = getInstance(configuration).getWALProvider();
+    return provider.createReader(provider.createWALIdentity(path.toString()), null, true);
   }
 
   /**
@@ -376,7 +377,8 @@ public class WALFactory {
    */
   static Reader createReader(final FileSystem fs, final Path path,
       final Configuration configuration, final CancelableProgressable reporter) throws IOException {
-    return getInstance(configuration).createReader(fs, path, reporter);
+    WALProvider provider = getInstance(configuration).getWALProvider();
+    return provider.createReader(provider.createWALIdentity(path.toString()), reporter, true);
   }
 
   /**
