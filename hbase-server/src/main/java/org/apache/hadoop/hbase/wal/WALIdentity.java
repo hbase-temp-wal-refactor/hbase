@@ -17,7 +17,6 @@
  */
 package org.apache.hadoop.hbase.wal;
 
-import java.io.IOException;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
 
@@ -29,43 +28,6 @@ import org.apache.yetus.audience.InterfaceStability;
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
 public interface WALIdentity extends Comparable<WALIdentity> {
-
-  static WALIdentity UNKNOWN = new WALIdentity() {
-    
-    @Override
-    public long getWalStartTime() {
-      return 0;
-    }
-    
-    @Override
-    public String getName() {
-      return "UNKNOWN";
-    }
-
-    @Override
-    public int compareTo(WALIdentity o) {
-      if (o == UNKNOWN) {
-        return 0;
-      }
-      return -1;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (!(o instanceof WALIdentity)) {
-        return false;
-      }
-      if (compareTo((WALIdentity)o) == 0) {
-        return true;
-      }
-      return false;
-    }
-
-    @Override
-    public int hashCode() {
-      return 0;
-    }
-  };
 
   /**
    * For the FS based path, it will be just a filename of whole path

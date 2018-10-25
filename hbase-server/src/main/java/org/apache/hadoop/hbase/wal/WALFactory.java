@@ -324,7 +324,7 @@ public class WALFactory {
   public Reader createReader(final FileSystem fs, final Path path,
       CancelableProgressable reporter) throws IOException {
     WALProvider provider = getWALProvider();
-    return provider.createReader(new FSWALIdentity(path), reporter, true);
+    return provider.createReader(provider.createWALIdentity(path.toString()), reporter, true);
   }
 
   // These static methods are currently used where it's impractical to
@@ -387,8 +387,8 @@ public class WALFactory {
    */
   public static Reader createReaderIgnoreCustomClass(final FileSystem fs, final Path path,
       final Configuration configuration) throws IOException {
-    return getInstance(configuration).getWALProvider()
-        .createReader(new FSWALIdentity(path), null, false);
+    WALProvider provider = getInstance(configuration).getWALProvider();
+    return provider.createReader(provider.createWALIdentity(path.toString()), null, false);
   }
 
   public final WALProvider getWALProvider() {

@@ -27,6 +27,7 @@ import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.wal.WAL.Entry;
 import org.apache.hadoop.hbase.wal.WAL.Reader;
 import org.apache.hadoop.hbase.wal.WALIdentity;
+import org.apache.hadoop.hbase.wal.WALProvider;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
@@ -61,6 +62,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
   protected final MetricsSource metrics;
 
   protected boolean eofAutoRecovery;
+  private WALProvider provider;
 
   /**
    * Create an entry stream over the given queue at the given start position
@@ -73,7 +75,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
    */
   public AbstractWALEntryStream(PriorityBlockingQueue<WALIdentity> logQueue, Configuration conf,
       long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
-      MetricsSource metrics) throws IOException {
+      MetricsSource metrics, WALProvider provider) throws IOException {
     this.logQueue = logQueue;
     this.conf = conf;
     this.currentPositionOfEntry = startPosition;
@@ -81,6 +83,7 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
     this.serverName = serverName;
     this.metrics = metrics;
     this.eofAutoRecovery = conf.getBoolean("replication.source.eof.autorecovery", false);
+    this.provider = provider;
   }
 
   @Override
@@ -258,7 +261,9 @@ public abstract class AbstractWALEntryStream implements WALEntryStream {
    * @return return a reader for the file
    * @throws IOException
    */
-  protected abstract Reader createReader(WALIdentity WALIdentity, Configuration conf) throws IOException;
+  protected Reader createReader(WALIdentity walId, Configuration conf) throws IOException {
+    return provider.createReader(walId, null, false);
+  }
 
   protected void resetReader() throws IOException {
     try {

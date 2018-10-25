@@ -54,14 +54,12 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
   private static final Logger LOG = LoggerFactory.getLogger(FSWALEntryStream.class);
 
   private FileSystem fs;
-  private WALProvider provider;
 
   public FSWALEntryStream(FileSystem fs, PriorityBlockingQueue<WALIdentity> logQueue, Configuration conf,
       long startPosition, WALFileSizeProvider walFileSizeProvider, ServerName serverName,
       MetricsSource metrics, WALProvider provider) throws IOException {
-    super(logQueue, conf, startPosition, walFileSizeProvider, serverName, metrics);
+    super(logQueue, conf, startPosition, walFileSizeProvider, serverName, metrics, provider);
     this.fs = fs;
-    this.provider = provider;
   }
 
   @Override
@@ -252,11 +250,6 @@ public class FSWALEntryStream extends AbstractWALEntryStream {
       sb.append("no replication ongoing, waiting for new log");
     }
     return sb.toString();
-  }
-
-  @Override
-  protected Reader createReader(WALIdentity walId, Configuration conf) throws IOException {
-    return provider.createReader(walId, null, false);
   }
 
 }

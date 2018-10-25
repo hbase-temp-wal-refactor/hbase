@@ -81,7 +81,7 @@ public final class ReplicationStatus {
   public static class ReplicationStatusBuilder {
     private String peerId = "UNKNOWN";
     private String walGroup = "UNKNOWN";
-    private WALIdentity currentPath =  WALIdentity.UNKNOWN;
+    private WALIdentity currentPath = null;
     private int queueSize = -1;
     private long ageOfLastShippedOp = -1;
     private long replicationDelay = -1;
