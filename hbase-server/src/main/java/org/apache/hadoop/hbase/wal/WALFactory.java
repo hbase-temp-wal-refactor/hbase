@@ -83,7 +83,7 @@ public class WALFactory {
   public static final String META_WAL_PROVIDER_CLASS = "hbase.wal.meta_provider.class";
 
   final String factoryId;
-  private WALProvider provider;
+  private final WALProvider provider;
   // The meta updates are written to a different wal. If this
   // regionserver holds meta regions, then this ref will be non-null.
   // lazily intialized; most RegionServers don't deal with META
@@ -101,7 +101,20 @@ public class WALFactory {
 
   private final Configuration conf;
 
-  private void assignProvider() throws IOException {
+  // Used for the singleton WALFactory, see below.
+  private WALFactory(Configuration conf) throws IOException {
+    // this code is duplicated here so we can keep our members final.
+    // until we've moved reader/writer construction down into providers, this initialization must
+    // happen prior to provider initialization, in case they need to instantiate a reader/writer.
+    timeoutMillis = conf.getInt("hbase.hlog.open.timeout", 300000);
+    /* TODO Both of these are probably specific to the fs wal provider */
+    logReaderClass = conf.getClass("hbase.regionserver.hlog.reader.impl", ProtobufLogReader.class,
+      AbstractFSWALProvider.Reader.class);
+    this.conf = conf;
+    // end required early initialization
+
+    // this instance can't create wals, just reader/writers.
+    factoryId = SINGLETON_ID;
     if (conf.getBoolean("hbase.regionserver.hlog.enabled", true)) {
       WALProvider provider = createProvider(
           getProviderClass(WAL_PROVIDER_CLASS, WAL_PROVIDER, DEFAULT_WAL_PROVIDER));
@@ -117,23 +130,6 @@ public class WALFactory {
       provider = new DisabledWALProvider();
       provider.init(this, conf, factoryId);
     }
-
-  }
-  // Used for the singleton WALFactory, see below.
-  private WALFactory(Configuration conf) throws IOException {
-    // this code is duplicated here so we can keep our members final.
-    // until we've moved reader/writer construction down into providers, this initialization must
-    // happen prior to provider initialization, in case they need to instantiate a reader/writer.
-    timeoutMillis = conf.getInt("hbase.hlog.open.timeout", 300000);
-    /* TODO Both of these are probably specific to the fs wal provider */
-    logReaderClass = conf.getClass("hbase.regionserver.hlog.reader.impl", ProtobufLogReader.class,
-      AbstractFSWALProvider.Reader.class);
-    this.conf = conf;
-    // end required early initialization
-
-    // this instance can't create wals, just reader/writers.
-    factoryId = SINGLETON_ID;
-    assignProvider();
   }
 
   @VisibleForTesting
@@ -220,7 +216,21 @@ public class WALFactory {
     this.conf = conf;
     this.factoryId = factoryId;
     // end required early initialization
-    assignProvider();
+    if (conf.getBoolean("hbase.regionserver.hlog.enabled", true)) {
+      WALProvider provider = createProvider(
+          getProviderClass(WAL_PROVIDER_CLASS, WAL_PROVIDER, DEFAULT_WAL_PROVIDER));
+      if (enableSyncReplicationWALProvider) {
+        provider = new SyncReplicationWALProvider(provider);
+      }
+      provider.init(this, conf, null);
+      provider.addWALActionsListener(new MetricsWAL());
+      this.provider = provider;
+    } else {
+      // special handling of existing configuration behavior.
+      LOG.warn("Running with WAL disabled.");
+      provider = new DisabledWALProvider();
+      provider.init(this, conf, factoryId);
+    }
   }
 
   /**
@@ -357,6 +367,16 @@ public class WALFactory {
   public static Reader createReader(final FileSystem fs, final Path path,
       final Configuration configuration) throws IOException {
     return getInstance(configuration).createReader(fs, path);
+  }
+
+  /**
+   * Create a reader for the given path, accept custom reader classes from conf.
+   * If you already have a WALFactory, you should favor the instance method.
+   * @return a WAL Reader, caller must close.
+   */
+  static Reader createReader(final FileSystem fs, final Path path,
+      final Configuration configuration, final CancelableProgressable reporter) throws IOException {
+    return getInstance(configuration).createReader(fs, path, reporter);
   }
 
   /**
